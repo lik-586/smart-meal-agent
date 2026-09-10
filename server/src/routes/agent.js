@@ -1,33 +1,17 @@
-/** Agent 智能体接口（同步 / SSE 流式 / 运行记录，需登录） */
+/** Agent 智能体接口（SSE 流式，供 AI 饮食顾问使用，需登录） */
 const express = require('express')
-const { runAgent, runAgentSync, listRuns, toolDefinitions } = require('../agent/agent')
+const { runAgent } = require('../agent/agent')
 const { overrideFromRequest } = require('../config')
 const { asyncHandler } = require('../utils')
 const { requireAuth } = require('../security')
 
 const router = express.Router()
 
-// AI 饮食顾问（智能体工作台）绑定用户，统一鉴权
+// AI 饮食顾问绑定登录用户，统一鉴权；运行记录按用户隔离
 router.use(requireAuth)
 
 const getUserId = req => String(req.auth.id)
 const reqConfig = req => ({ ...overrideFromRequest(req), ...(req.body?.config || {}) })
-
-/** Agent 可用工具列表 */
-router.get('/agent/tools', (req, res) => {
-    res.json({
-        ok: true,
-        data: toolDefinitions.map(t => ({ name: t.function.name, description: t.function.description, parameters: t.function.parameters }))
-    })
-})
-
-/** 同步执行（一次性返回） */
-router.post('/agent/chat', asyncHandler(async (req, res) => {
-    const { message, history } = req.body || {}
-    if (!message) return res.status(400).json({ ok: false, message: '缺少必要参数：message' })
-    const run = await runAgentSync({ message, history: history || [], userId: getUserId(req), config: reqConfig(req) })
-    res.json({ ok: true, data: { runId: run.id, answer: run.answer, steps: run.steps, status: run.status } })
-}))
 
 /** SSE 流式执行：实时推送 thought / tool_start / tool_end / delta */
 router.post('/agent/chat/stream', asyncHandler(async (req, res) => {
@@ -60,11 +44,5 @@ router.post('/agent/chat/stream', asyncHandler(async (req, res) => {
         res.end()
     }
 }))
-
-/** Agent 运行历史 */
-router.get('/agent/runs', (req, res) => {
-    const userId = getUserId(req)
-    res.json({ ok: true, data: listRuns(userId, Number(req.query.limit) || 20) })
-})
 
 module.exports = router

@@ -128,14 +128,11 @@ SSE 数据格式：`data: {"content":"增量文本"}`，结束 `data: [DONE]`，
 
 ---
 
-## 八、AI Agent（智能体，均需登录）
+## 八、AI Agent（智能体，需登录）
 
 | 方法 | 路径                      | 说明                                   |
 | ---- | ------------------------- | -------------------------------------- |
-| GET  | `/api/agent/tools`        | 获取 Agent 可用工具清单（10 个）       |
-| POST | `/api/agent/chat`         | 同步执行（一次性返回 `{ runId, answer, steps, status }`） |
-| POST | `/api/agent/chat/stream`  | **SSE 流式执行**（推荐）               |
-| GET  | `/api/agent/runs`         | Agent 运行历史（`?limit=20`，按用户隔离） |
+| POST | `/api/agent/chat/stream`  | **SSE 流式执行**（AI 饮食顾问使用）    |
 
 ### SSE 事件说明
 

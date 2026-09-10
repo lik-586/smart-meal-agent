@@ -248,14 +248,11 @@ npm run server         # 访问 http://localhost:3001 即为完整应用
 | DELETE | `/api/gallery/:id`                | 删除图片                     |
 | DELETE | `/api/gallery`                    | 清空图库                     |
 
-### AI Agent（均需登录）
+### AI Agent（需登录）
 
 | 方法 | 路径                      | 说明                                   |
 | ---- | ------------------------- | -------------------------------------- |
-| GET  | `/api/agent/tools`        | 获取 Agent 可用工具清单（10 个）       |
-| POST | `/api/agent/chat`         | 同步执行（一次性返回思考步骤与答案）   |
-| POST | `/api/agent/chat/stream`  | **SSE 流式执行**（推荐）               |
-| GET  | `/api/agent/runs`         | Agent 运行历史（`?limit=20`）          |
+| POST | `/api/agent/chat/stream`  | **SSE 流式执行**（AI 饮食顾问使用）    |
 
 `/api/agent/chat/stream` 请求体：`{ "message": "用户指令", "history": [] }`
 

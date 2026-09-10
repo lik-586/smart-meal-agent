@@ -1,48 +1,5 @@
-/** Agent 智能体前端服务（SSE 流式 + 运行记录） */
-import { apiGet, apiPost, sseRequest } from './http'
-
-export interface AgentToolInfo {
-    name: string
-    description: string
-    parameters: Record<string, any>
-}
-
-export interface AgentStep {
-    type: 'thought' | 'tool'
-    name?: string
-    args?: Record<string, any>
-    summary?: string
-    result?: any
-    content?: string
-    ms?: number
-    at?: string
-}
-
-export interface AgentRunResult {
-    runId: string
-    answer: string
-    steps: AgentStep[]
-    status: string
-}
-
-export interface AgentRunHistory {
-    id: string
-    message: string
-    answer: string
-    status: string
-    createdAt: string
-    steps: number
-}
-
-/** 可用工具清单 */
-export const getAgentTools = () => apiGet<AgentToolInfo[]>('/agent/tools')
-
-/** 历史运行记录 */
-export const getAgentRuns = (limit = 20) => apiGet<AgentRunHistory[]>(`/agent/runs?limit=${limit}`)
-
-/** 同步执行一次 Agent 任务 */
-export const runAgent = (message: string, history: Array<{ role: string; content: string }> = []) =>
-    apiPost<AgentRunResult>('/agent/chat', { message, history })
+/** Agent 智能体前端服务（SSE 流式，供 AI 饮食顾问使用） */
+import { sseRequest } from './http'
 
 export interface AgentStreamHandlers {
     onRunStart?: (payload: { runId: string; message: string }) => void

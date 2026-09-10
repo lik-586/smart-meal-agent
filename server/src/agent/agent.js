@@ -235,20 +235,11 @@ async function runAgent({ message, history = [], userId = 'anonymous', config, e
     return run
 }
 
-/** 非流式运行：收集事件后一次性返回 */
+/** 非流式运行：收集事件后一次性返回（保留供测试与内部调用） */
 async function runAgentSync(options) {
     const events = []
     const run = await runAgent({ ...options, emit: (type, payload) => events.push({ type, ...payload }) })
     return { ...run, events }
 }
 
-/** 历史运行记录 */
-function listRuns(userId, limit = 20) {
-    return db
-        .find('agentRuns', r => !userId || r.userId === userId)
-        .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))
-        .slice(0, limit)
-        .map(r => ({ id: r.id, message: r.message, answer: r.answer, status: r.status, createdAt: r.createdAt, steps: (r.steps || []).length }))
-}
-
-module.exports = { runAgent, runAgentSync, listRuns, SYSTEM_PROMPT, toolDefinitions }
+module.exports = { runAgent, runAgentSync, SYSTEM_PROMPT, toolDefinitions }

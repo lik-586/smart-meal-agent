@@ -139,15 +139,6 @@
                                 <span>封神图鉴</span>
                             </router-link>
                             <router-link
-                                to="/agent"
-                                @click="showMoreMenu = false"
-                                class="flex items-center gap-2 px-4 py-3 text-sm font-bold transition-colors duration-200 hover:bg-gray-100"
-                                :class="$route.path === '/agent' ? 'bg-yellow-100 text-gray-800' : 'text-gray-700'"
-                            >
-                                <span>🤖</span>
-                                <span>智能体工作台</span>
-                            </router-link>
-                            <router-link
                                 to="/about"
                                 @click="showMoreMenu = false"
                                 class="flex items-center gap-2 px-4 py-3 text-sm font-bold transition-colors duration-200 hover:bg-gray-100"
@@ -259,15 +250,6 @@
                                 <span>AI饮食顾问</span>
                             </router-link>
                             <router-link
-                                to="/agent"
-                                @click="showMobileMenu = false"
-                                class="flex items-center gap-1.5 px-3 py-2 rounded-full font-bold border-2 border-[#0A0910] transition-all duration-200 whitespace-nowrap text-sm"
-                                :class="$route.path === '/agent' ? 'bg-yellow-400 text-gray-800 shadow-md' : 'bg-white text-gray-700 hover:bg-gray-50 active:scale-95'"
-                            >
-                                <span>🤖</span>
-                                <span>智能体工作台</span>
-                            </router-link>
-                            <router-link
                                 to="/favorites"
                                 @click="showMobileMenu = false"
                                 class="flex items-center gap-1.5 px-3 py-2 rounded-full font-bold border-2 border-[#0A0910] transition-all duration-200 whitespace-nowrap text-sm"
@@ -357,8 +339,6 @@ const pageTitle = computed(() => {
             return '我的会话'
         case '/consultant':
             return 'AI 饮食顾问'
-        case '/agent':
-            return '智能体工作台'
         case '/about':
             return '关于项目'
         default:
@@ -393,7 +373,7 @@ const pageSubtitle = computed(() => {
 
 // 检查更多菜单中的页面是否处于活跃状态
 const isMoreMenuActive = computed(() => {
-    return ['/favorites', '/gallery', '/about', '/agent'].includes(route.path)
+    return ['/favorites', '/gallery', '/about'].includes(route.path)
 })
 
 // 处理鼠标进入事件

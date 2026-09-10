@@ -115,7 +115,7 @@ The agent (`饭小神`) follows a **Thought → Action → Observation** loop:
 
 > 🔁 **Fallback**: if the provider lacks Function Calling or a call fails, the agent automatically switches to "LLM intent recognition + rule-based dispatch" and informs the user via the SSE `thought` event.
 
-> 💬 The agent has two entry points: the **AI Diet Consultant** (`/consultant`) is chat-first, streaming answers with thinking steps and tool calls; the **Agent Workbench** (`/agent`) focuses on execution-trace visualization, run-history replay and the tool list.
+> 💬 The agent powers the **AI Diet Consultant** page (`/consultant`): the chat area streams the answer while showing thinking steps and tool calls.
 
 ## 🚀 Quick Start
 

@@ -14,7 +14,6 @@ import SettingsDemo from './views/SettingsDemo.vue'
 import Login from './views/Login.vue'
 import Sessions from './views/Sessions.vue'
 import AIConsultant from './views/AIConsultant.vue'
-import AgentStudio from './views/AgentStudio.vue'
 import { autoRefreshEnvSettings } from './utils/envWatcher'
 import { loadFavorites, reloadFavorites, clearFavoritesCache } from './services/favoriteService'
 import { loadGallery, reloadGallery, clearGalleryCache } from './services/galleryService'
@@ -36,7 +35,8 @@ const routes = [
     { path: '/login', component: Login },
     { path: '/sessions', component: Sessions },
     { path: '/consultant', component: AIConsultant },
-    { path: '/agent', component: AgentStudio }
+    // 未匹配路由（含已移除的 /agent 智能体工作台）统一回首页，避免白屏
+    { path: '/:pathMatch(.*)*', redirect: '/' }
 ]
 
 const router = createRouter({
@@ -45,7 +45,7 @@ const router = createRouter({
 })
 
 // 需要登录才能访问的个性化页面
-const AUTH_REQUIRED_PATHS = ['/favorites', '/gallery', '/sessions', '/consultant', '/agent']
+const AUTH_REQUIRED_PATHS = ['/favorites', '/gallery', '/sessions', '/consultant']
 
 router.beforeEach((to) => {
     const loggedIn = isLoggedIn()

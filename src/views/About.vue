@@ -33,7 +33,7 @@
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <span class="text-green-500">✓</span>
-                                        <span class="text-sm">可视化 AI Agent 工作台</span>
+                                        <span class="text-sm">AI 饮食顾问（工具调用 + 轨迹可视化）</span>
                                     </div>
                                 </div>
                             </div>
