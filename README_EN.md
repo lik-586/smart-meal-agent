@@ -249,10 +249,7 @@ Full details: [docs/API.md](./docs/API.md). Response format: `{ "ok": true, "dat
 
 | Method | 路径                      | Description                              |
 | ------ | ------------------------- | ---------------------------------------- |
-| GET    | `/api/agent/tools`        | List available tools (10)                |
-| POST   | `/api/agent/chat`         | Synchronous run (steps + answer at once) |
-| POST   | `/api/agent/chat/stream`  | **SSE streaming run** (recommended)      |
-| GET    | `/api/agent/runs`         | Run history (`?limit=20`)                |
+| POST   | `/api/agent/chat/stream`  | **SSE streaming run** (used by the AI Diet Consultant) |
 
 Request body for `/api/agent/chat/stream`: `{ "message": "...", "history": [] }`
 
