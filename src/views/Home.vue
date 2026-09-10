@@ -438,6 +438,7 @@
                                             </div>
                                             <h4 class="text-lg font-bold text-gray-800 mb-2">大师表示很为难</h4>
                                             <p class="text-gray-600 text-sm mb-4">{{ cuisineInfo.name }}看了看你的食材，挠了挠头说："这个组合我还没学会呢！"</p>
+                                            <p v-if="cuisineInfo.errorMessage" class="text-xs text-red-600 bg-red-50 border border-red-200 rounded p-2 mb-4 break-words text-left">失败原因：{{ cuisineInfo.errorMessage }}</p>
                                             <p class="text-gray-600 text-sm mb-4">（目前免费模型效果有限，请自行更换模型服务，也有可能是API速率问题，请重试！）</p>
                                         </div>
 
@@ -946,9 +947,12 @@ const generateRecipes = async () => {
         })
     }
 
+    // 确定本次要生成的菜系（槽位与请求共用同一数组，避免未选菜系时两次随机错位）
+    let selectedCuisineObjects: CuisineType[] = []
+
     // 检查是否有自定义提示词
     if (customPrompt.value.trim()) {
-        // 使用自定义提示词生成菜谱 - 立即创建单个槽位
+        // 使用自定义提示词生成菜谱 - 立即创建单个“自定义大师”槽位
         cuisineSlots.value = [
             {
                 id: 'custom',
@@ -959,7 +963,7 @@ const generateRecipes = async () => {
         ]
     } else {
         // 使用菜系生成菜谱 - 立即初始化菜系槽位
-        let selectedCuisineObjects = cuisines.filter(c => selectedCuisines.value.includes(c.id))
+        selectedCuisineObjects = cuisines.filter(c => selectedCuisines.value.includes(c.id))
 
         if (selectedCuisineObjects.length === 0) {
             // 随机选择2个菜系
@@ -1011,14 +1015,7 @@ const generateRecipes = async () => {
                 progressIntervals.push(interval)
             })
 
-            // 获取选中的菜系对象
-            const selectedCuisineObjects =
-                cuisines.filter(c => selectedCuisines.value.includes(c.id)).length > 0
-                    ? cuisines.filter(c => selectedCuisines.value.includes(c.id))
-                    : (() => {
-                          const shuffled = [...cuisines].sort(() => 0.5 - Math.random())
-                          return shuffled.slice(0, 2)
-                      })()
+            // selectedCuisineObjects 已在上方确定（与槽位一一对应），不再二次随机
 
             // 使用流式生成菜谱，每完成一个就立即显示
             await generateMultipleRecipesStream(

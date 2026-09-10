@@ -30,6 +30,11 @@
         </div>
 
         <div class="p-2 md:p-6">
+            <!-- 保底推荐说明 -->
+            <div v-if="recipe.fallback && recipe.fallbackMessage" class="mb-4 bg-yellow-50 border-2 border-yellow-200 rounded-lg p-3">
+                <p class="text-xs text-yellow-800 leading-relaxed">🛟 {{ recipe.fallbackMessage }}</p>
+            </div>
+
             <!-- 食材列表 -->
             <div class="mb-4">
                 <h4 class="text-sm font-bold text-dark-800 mb-2 flex items-center gap-1">🥬 所需食材</h4>

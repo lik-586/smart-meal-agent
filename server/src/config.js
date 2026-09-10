@@ -34,7 +34,11 @@ const envConfig = {
     vision: {
         baseUrl: process.env.VISION_BASE_URL || '',
         apiKey: process.env.VISION_API_KEY || '',
-        model: process.env.VISION_MODEL || 'GLM-4.1V-Thinking-Flash',
+        // 只有文本服务本身是智谱时才默认启用 GLM 视觉模型；
+        // 换成 DeepSeek 等纯文本服务后自动关闭拍照识别，避免拿错服务商的密钥去请求视觉模型
+        model:
+            process.env.VISION_MODEL ||
+            (String(process.env.TEXT_BASE_URL || process.env.OPENAI_BASE_URL || '').includes('bigmodel') ? 'GLM-4.1V-Thinking-Flash' : ''),
         timeout: Number(process.env.VISION_TIMEOUT || 120000)
     },
     agent: {
@@ -52,6 +56,18 @@ const runtimeConfig = {
 }
 
 const pick = (...values) => values.find(v => v !== undefined && v !== null && v !== '') ?? ''
+
+/** 判断是否为占位符密钥（用户未替换 .env.example 中的示例值） */
+function isPlaceholderKey(key) {
+    const k = String(key || '').trim().toLowerCase()
+    if (!k) return false
+    if (k.includes('your-') && k.includes('key')) return true
+    if (k.includes('your_api')) return true
+    if (k.includes('placeholder') || k.includes('changeme') || k.includes('change-me')) return true
+    if (/^x+$/.test(k)) return true
+    if (/^sk-x+$/i.test(k)) return true
+    return false
+}
 
 /**
  * 解析文本生成配置
@@ -78,10 +94,15 @@ function getImageConfig(override = {}) {
 
 function getVisionConfig(override = {}) {
     const text = getTextConfig(override)
+    const visionModel = pick(override.model, runtimeConfig.vision.model)
+    // 只有在真的配置了视觉模型时才复用文本服务的地址/密钥。
+    // 否则（例如文本服务换成 DeepSeek 这类纯文本服务）不再借用密钥，
+    // 避免「拿 DeepSeek 的 key 去请求 GLM 视觉模型」这种错配，让调用方给出明确提示。
+    const canReuseText = Boolean(visionModel)
     return {
-        baseUrl: pick(override.baseUrl, runtimeConfig.vision.baseUrl, text.baseUrl),
-        apiKey: pick(override.apiKey, runtimeConfig.vision.apiKey, text.apiKey),
-        model: pick(override.model, runtimeConfig.vision.model),
+        baseUrl: pick(override.baseUrl, runtimeConfig.vision.baseUrl, canReuseText ? text.baseUrl : ''),
+        apiKey: pick(override.apiKey, runtimeConfig.vision.apiKey, canReuseText ? text.apiKey : ''),
+        model: visionModel,
         timeout: Number(pick(override.timeout, runtimeConfig.vision.timeout, text.timeout))
     }
 }
@@ -133,6 +154,7 @@ module.exports = {
     getAgentConfig,
     overrideFromRequest,
     updateRuntimeConfig,
+    isPlaceholderKey,
     maskConfig,
     get port() {
         return envConfig.port

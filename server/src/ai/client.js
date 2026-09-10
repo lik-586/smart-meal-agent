@@ -2,7 +2,7 @@
  * OpenAI 兼容协议的大模型客户端（Chat / 流式 / 函数调用 / 图片生成）
  * 支持智谱 GLM、DeepSeek、通义、Moonshot、OpenAI、本地 Ollama 等 OpenAI 标准接口。
  */
-const { getTextConfig, getImageConfig, getVisionConfig } = require('../config')
+const { getTextConfig, getImageConfig, getVisionConfig, isPlaceholderKey } = require('../config')
 const { extractJSON } = require('../utils')
 
 const normalizeBase = url => String(url || '').replace(/\/+$/, '')
@@ -19,36 +19,70 @@ const imageEndpoint = baseUrl => {
     return `${base}/images/generations`
 }
 
-async function requestJSON(url, { apiKey, body, timeout }) {
-    const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), timeout || 120000)
-    try {
-        const res = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${apiKey}`
-            },
-            body: JSON.stringify(body),
-            signal: controller.signal
-        })
-        const text = await res.text()
-        let data
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
+
+/** 可重试的临时性故障：限流、网关抖动、网络中断、超时 */
+const TRANSIENT_STATUS = new Set([408, 409, 425, 429, 500, 502, 503, 504])
+const isTransient = (err, status) =>
+    (status && TRANSIENT_STATUS.has(status)) ||
+    err?.name === 'AbortError' ||
+    /fetch failed|network|ECONNRESET|ECONNREFUSED|socket hang up|ETIMEDOUT|timeout|terminated/i.test(err?.message || '')
+
+/**
+ * 带重试的 JSON 请求：限流(429)/5xx/超时/网络抖动自动指数退避重试，
+ * 这是降低"生成失败率"最有效的一环（免费模型限流非常常见）。
+ */
+async function requestJSON(url, { apiKey, body, timeout, retries = 2 }) {
+    let lastErr = new Error('模型服务调用失败')
+
+    for (let attempt = 0; attempt <= retries; attempt++) {
+        let status
+        let retryAfter = 0
+        const controller = new AbortController()
+        const timer = setTimeout(() => controller.abort(), timeout || 120000)
+
         try {
-            data = JSON.parse(text)
-        } catch (_) {
-            throw new Error(`模型服务返回非 JSON 内容(${res.status}): ${text.slice(0, 200)}`)
+            if (attempt > 0) {
+                // 指数退避 + 随机抖动
+                await sleep(Math.min(700 * 2 ** (attempt - 1), 5000) + Math.random() * 500)
+            }
+
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${apiKey}`
+                },
+                body: JSON.stringify(body),
+                signal: controller.signal
+            })
+            const text = await res.text()
+            let data
+            try {
+                data = JSON.parse(text)
+            } catch (_) {
+                throw new Error(`模型服务返回非 JSON 内容(${res.status}): ${text.slice(0, 200)}`)
+            }
+            if (!res.ok) {
+                status = res.status
+                const hint = Number(res.headers?.get?.('retry-after'))
+                if (Number.isFinite(hint) && hint > 0) retryAfter = Math.min(hint * 1000, 10000)
+                throw new Error(data.error?.message || data.message || `模型服务调用失败(${res.status})`)
+            }
+            return data
+        } catch (err) {
+            lastErr = err.name === 'AbortError' ? new Error('模型调用超时，请稍后重试') : err
+            if (attempt < retries && isTransient(err, status)) {
+                if (retryAfter) await sleep(retryAfter)
+                continue
+            }
+            throw lastErr
+        } finally {
+            clearTimeout(timer)
         }
-        if (!res.ok) {
-            throw new Error(data.error?.message || data.message || `模型服务调用失败(${res.status})`)
-        }
-        return data
-    } catch (err) {
-        if (err.name === 'AbortError') throw new Error('模型调用超时，请稍后重试')
-        throw err
-    } finally {
-        clearTimeout(timer)
     }
+
+    throw lastErr
 }
 
 /**
@@ -58,6 +92,7 @@ async function requestJSON(url, { apiKey, body, timeout }) {
 async function chat(messages, options = {}) {
     const config = getTextConfig(options.config)
     if (!config.apiKey) throw new Error('服务端未配置文本模型 API Key，请在 server/.env 中配置 TEXT_API_KEY')
+    if (isPlaceholderKey(config.apiKey)) throw new Error('server/.env 中的 TEXT_API_KEY 仍是占位符，请替换为真实密钥（或在前端设置页填写）')
 
     const body = {
         model: config.model,
@@ -78,9 +113,11 @@ async function chat(messages, options = {}) {
         timeout: config.timeout
     })
 
-    const message = data.choices?.[0]?.message || {}
+    const choice = data.choices?.[0] || {}
+    const message = choice.message || {}
     return {
-        content: message.content || '',
+        content: message.content || message.reasoning_content || '',
+        finishReason: choice.finish_reason,
         toolCalls: (message.tool_calls || []).map(call => ({
             id: call.id,
             name: call.function?.name,
@@ -101,30 +138,40 @@ function safeParseArgs(args) {
 }
 
 /**
- * 对话并要求模型返回 JSON（空内容 / 非法 JSON 自动重试，最多 3 次尝试）
- * 并发调用大模型时，服务商偶发返回空内容或被限流截断，重试即可恢复。
+ * 对话并要求模型返回 JSON，最多 3 次：
+ *  · 输出被 max_tokens 截断 → 要求精简后重来
+ *  · 返回非法 JSON → 要求只输出纯 JSON（兼容不支持 json_object 的服务商）
  */
 async function chatJSON(messages, options = {}) {
-    const maxAttempts = 3
-    let lastErr = null
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const attempts = options.retries ?? 3
+    let followUps = []
+    let lastError = new Error('模型返回内容为空')
+
+    for (let attempt = 1; attempt <= attempts; attempt++) {
+        const result = await chat([...messages, ...followUps], {
+            ...options,
+            responseFormat: attempt === 1 ? options.responseFormat || { type: 'json_object' } : undefined
+        })
+
         try {
-            const result = await chat(messages, {
-                ...options,
-                responseFormat: attempt === 1 ? options.responseFormat || { type: 'json_object' } : undefined
-            })
-            const content = String(result.content || '').trim()
-            if (!content) throw new Error('模型返回内容为空（可能被限流或超时截断）')
-            return extractJSON(content)
+            return extractJSON(result.content)
         } catch (err) {
-            lastErr = err
-            if (attempt < maxAttempts) {
-                // 指数退避：1s、2s，缓解并发限流
-                await new Promise(r => setTimeout(r, attempt * 1000))
-            }
+            lastError = err
+            const truncated = result.finishReason === 'length' || /Unexpected end of JSON input/i.test(err.message)
+            const tail = String(result.content || '').slice(-800)
+            followUps = [
+                ...(tail ? [{ role: 'assistant', content: tail }] : []),
+                {
+                    role: 'user',
+                    content: truncated
+                        ? '你上一次的回复被长度限制截断了，JSON 不完整。请大幅精简后重新输出：步骤不超过 6 步，每句不超过 30 字，只输出完整合法的 JSON，不要任何解释或代码块。'
+                        : '你上一次的回复不是合法 JSON，请只输出纯 JSON 文本，不要包含任何解释、标记或代码块。'
+                }
+            ]
         }
     }
-    throw lastErr
+
+    throw lastError
 }
 
 /**
@@ -133,6 +180,7 @@ async function chatJSON(messages, options = {}) {
 async function chatStream(messages, { onDelta, config: override, temperature, maxTokens } = {}) {
     const config = getTextConfig(override)
     if (!config.apiKey) throw new Error('服务端未配置文本模型 API Key，请在 server/.env 中配置 TEXT_API_KEY')
+    if (isPlaceholderKey(config.apiKey)) throw new Error('server/.env 中的 TEXT_API_KEY 仍是占位符，请替换为真实密钥（或在前端设置页填写）')
 
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), config.timeout)
@@ -204,6 +252,7 @@ async function chatStream(messages, { onDelta, config: override, temperature, ma
 async function generateImage(prompt, options = {}) {
     const config = getImageConfig(options.config)
     if (!config.apiKey) throw new Error('服务端未配置图片模型 API Key，请在 server/.env 中配置 IMAGE_API_KEY')
+    if (isPlaceholderKey(config.apiKey)) throw new Error('server/.env 中的 IMAGE_API_KEY 仍是占位符，请替换为真实密钥（或在前端设置页填写）')
 
     const size = options.size || '1152x896'
     const data = await requestJSON(imageEndpoint(config.baseUrl), {
@@ -229,6 +278,7 @@ async function generateImage(prompt, options = {}) {
 async function visionRecognize({ base64, mime = 'image/jpeg', prompt, config: override }) {
     const config = getVisionConfig(override)
     if (!config.apiKey) throw new Error('服务端未配置视觉模型 API Key，请在 server/.env 中配置 VISION_API_KEY 或 TEXT_API_KEY')
+    if (isPlaceholderKey(config.apiKey)) throw new Error('server/.env 中的视觉/文本模型 API Key 仍是占位符，请替换为真实密钥（或在前端设置页填写）')
 
     const data = await requestJSON(chatEndpoint(config.baseUrl), {
         apiKey: config.apiKey,

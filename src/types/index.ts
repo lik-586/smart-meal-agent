@@ -27,6 +27,8 @@ export interface Recipe {
     tips: string[]
     nutritionAnalysis?: NutritionAnalysis // 营养分析
     winePairing?: WinePairing // 酒水搭配
+    fallback?: boolean // 是否为保底推荐（AI 生成失败时的本地兜底菜谱）
+    fallbackMessage?: string // 保底说明
 }
 
 // 制作步骤

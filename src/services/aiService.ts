@@ -79,7 +79,24 @@ export const generateCustomRecipe = async (ingredients: string[], customPrompt: 
 }
 
 /**
- * 依次生成多个菜系的菜谱（保留原有渐进式体验）
+ * 并发执行任务，最多同时 limit 个（避免把模型服务打限流）
+ */
+const mapWithConcurrency = async <T>(items: T[], limit: number, task: (item: T, index: number) => Promise<void>): Promise<void> => {
+    let cursor = 0
+    const size = Math.max(1, Math.min(limit, items.length))
+    const workers = Array.from({ length: size }, async () => {
+        while (cursor < items.length) {
+            const index = cursor++
+            await task(items[index], index)
+        }
+    })
+    await Promise.all(workers)
+}
+
+/**
+ * 生成多个菜系的菜谱
+ * 并发请求（最多同时 2 个，避免免费模型被限流报 429），
+ * 谁先完成谁先渲染，保留渐进式体验，也避免串行等待导致耗时成倍增加。
  */
 export const generateMultipleRecipesStream = async (
     ingredients: string[],
@@ -90,26 +107,28 @@ export const generateMultipleRecipesStream = async (
 ): Promise<void> => {
     const total = cuisines.length
     let completedCount = 0
+    let lastErrorMessage = ''
 
-    for (let index = 0; index < cuisines.length; index++) {
-        const cuisine = cuisines[index]
+    await mapWithConcurrency(cuisines, 2, async (cuisine, index) => {
         try {
-            const delay = 500 + Math.random() * 1200
-            await new Promise(resolve => setTimeout(resolve, delay))
+            // 轻微错开请求，降低同一秒并发打到模型服务触发限流的概率
+            await new Promise(resolve => setTimeout(resolve, Math.random() * 400))
             const recipe = await generateRecipe(ingredients, cuisine, customPrompt)
             completedCount++
             onRecipeGenerated(recipe, index, total)
         } catch (error) {
+            const reason = error instanceof Error ? error.message : String(error)
+            lastErrorMessage = reason
             console.error(`生成${cuisine.name}菜谱失败:`, error)
             if (onRecipeError) {
-                onRecipeError(new Error(`${cuisine.name}不会这道菜，哈哈`), index, cuisine, total)
+                onRecipeError(new Error(reason), index, cuisine, total)
             }
-            continue
         }
-    }
+    })
 
     if (completedCount === 0) {
-        throw new Error('所有菜系生成都失败了，请稍后重试')
+        // 全部失败时把真实原因抛给页面，便于用户定位（如 API Key 未配置）
+        throw new Error(lastErrorMessage || '所有菜系生成都失败了，请稍后重试')
     }
 }
 

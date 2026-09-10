@@ -37,7 +37,9 @@ const normalizeRecipe = (data, fallback = {}) => ({
     steps: Array.isArray(data?.steps) && data.steps.length ? data.steps : [{ step: 1, description: '准备所有食材', time: 5 }],
     cookingTime: Number(data?.cookingTime) || fallback.cookingTime || 25,
     difficulty: ['easy', 'medium', 'hard'].includes(data?.difficulty) ? data.difficulty : fallback.difficulty || 'medium',
-    tips: Array.isArray(data?.tips) && data.tips.length ? data.tips : ['注意火候控制', '调味要适中']
+    tips: Array.isArray(data?.tips) && data.tips.length ? data.tips : ['注意火候控制', '调味要适中'],
+    // 保底菜谱标识协议：前端 RecipeCard 据此展示「保底推荐」徽标与说明
+    ...(data?.fallback ? { fallback: true, fallbackMessage: data.fallbackMessage } : {})
 })
 
 /** 按食材 + 菜系生成菜谱 */
@@ -58,7 +60,7 @@ async function generateRecipe({ ingredients, cuisine, customPrompt, config }) {
     } catch (err) {
         // AI 多次重试仍失败：本地经典菜库兜底，保证永远能出菜谱
         console.error('[recipe] AI 生成失败，启用本地兜底菜谱:', err.message)
-        return fallbackRecipe(ingredients, cuisine)
+        return fallbackRecipe(ingredients, cuisine, '', err.message)
     }
 
     return normalizeRecipe(data, {
@@ -98,7 +100,7 @@ ${RECIPE_JSON_TEMPLATE}${JSON_OUTPUT_RULE}`
         )
     } catch (err) {
         console.error('[recipe] 自定义菜谱 AI 失败，启用本地兜底:', err.message)
-        return normalizeRecipe(fallbackRecipe(ingredients, { id: 'custom', name: '家常菜' }), { id: uid('recipe-custom'), cuisine: '自定义', ingredients })
+        return normalizeRecipe(fallbackRecipe(ingredients, { id: 'custom', name: '家常菜' }, '', err.message), { id: uid('recipe-custom'), cuisine: '自定义', ingredients })
     }
 
     return normalizeRecipe(data, { id: uid('recipe-custom'), cuisine: '自定义', ingredients })
@@ -116,7 +118,7 @@ async function generateDishRecipeByName({ dishName, config }) {
 5. 让家庭厨师也能轻松掌握的详细指导
 
 请按照以下JSON格式返回菜谱：
-${RECIPE_JSON_TEMPLATE}`
+${RECIPE_JSON_TEMPLATE}${JSON_OUTPUT_RULE}`
 
     let data
     try {
@@ -133,7 +135,7 @@ ${RECIPE_JSON_TEMPLATE}`
         )
     } catch (err) {
         console.error('[recipe] 按菜名查询 AI 失败，启用本地兜底:', err.message)
-        return normalizeRecipe(fallbackRecipe([], { id: 'custom', name: '传统菜谱' }, dishName), { id: uid('dish-search'), name: dishName, cuisine: '传统菜谱' })
+        return normalizeRecipe(fallbackRecipe([], { id: 'custom', name: '传统菜谱' }, dishName, err.message), { id: uid('dish-search'), name: dishName, cuisine: '传统菜谱' })
     }
 
     return normalizeRecipe(data, { id: uid('dish-search'), name: dishName, cuisine: '传统菜谱' })
@@ -151,7 +153,13 @@ ${DETAIL_REQUIREMENT}
 请按照以下JSON格式返回菜谱：
 ${RECIPE_JSON_TEMPLATE}${JSON_OUTPUT_RULE}`
 
-    const data = await chatJSON([{ role: 'system', content: CHEF_SYSTEM }, { role: 'user', content: prompt }], { config, maxTokens: 4096 })
+    let data
+    try {
+        data = await chatJSON([{ role: 'system', content: CHEF_SYSTEM }, { role: 'user', content: prompt }], { config, maxTokens: 4096 })
+    } catch (err) {
+        console.error('[recipe] 单菜品 AI 失败，启用本地兜底:', err.message)
+        return normalizeRecipe(fallbackRecipe([], { id: 'custom', name: category || '一桌好菜' }, dishName, err.message), { id: uid('dish-recipe'), name: dishName, cuisine: category || '一桌好菜' })
+    }
 
     return normalizeRecipe(data, { id: uid('dish-recipe'), name: dishName, cuisine: category || '一桌好菜' })
 }

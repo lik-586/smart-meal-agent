@@ -387,7 +387,7 @@ what-to-eat-final/
 │   │   ├── settings.js            # 模型配置
 │   │   └── auth.js                # 登录状态（事件广播联动导航）
 │   ├── utils/                 # apiConfig / envWatcher 等工具
-│   ├── views/                 # 13 个页面（见「页面与路由」）
+│   ├── views/                 # 14 个页面（见「页面与路由」）
 │   ├── types/                 # TypeScript 类型定义
 │   ├── main.ts                # 应用入口 + 路由 + 登录守卫
 │   └── style.css

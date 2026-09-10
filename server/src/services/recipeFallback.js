@@ -175,6 +175,8 @@ function fallbackRecipe(ingredients, cuisine, overrideName) {
         steps: genericSteps(dish, userItems),
         cookingTime: 20,
         difficulty: 'easy',
+        fallback: true,
+        fallbackMessage: `AI 大师这次没能写出完整菜谱${reason ? `（${reason}）` : ''}，先为你奉上这道与你的食材、菜系相关的经典菜。可稍后重新生成，或在右上角「设置」中更换更稳定的模型服务。`,
         tips: [
             '本菜谱由本地经典菜库智能匹配（AI 服务暂时繁忙时的保底方案），食材相关性已按你的输入筛选',
             '火候与调味可按个人口味微调，新手建议全程中火避免炒糊',
