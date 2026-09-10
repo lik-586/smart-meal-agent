@@ -3,9 +3,14 @@
  * 支持智谱 GLM、DeepSeek、通义、Moonshot、OpenAI、本地 Ollama 等 OpenAI 标准接口。
  */
 const { getTextConfig, getImageConfig, getVisionConfig, isPlaceholderKey } = require('../config')
+const { getProvider, isReasoningModel } = require('../providers')
 const { extractJSON } = require('../utils')
 
 const normalizeBase = url => String(url || '').replace(/\/+$/, '')
+
+/** 按服务商协议构造鉴权头（本地 Ollama 等可无密钥） */
+const authHeaders = (apiKey, authStyle) =>
+    apiKey ? (authStyle === 'x-api-key' ? { 'x-api-key': apiKey } : { Authorization: `Bearer ${apiKey}` }) : {}
 
 const chatEndpoint = baseUrl => {
     const base = normalizeBase(baseUrl)
@@ -32,7 +37,7 @@ const isTransient = (err, status) =>
  * 带重试的 JSON 请求：限流(429)/5xx/超时/网络抖动自动指数退避重试，
  * 这是降低"生成失败率"最有效的一环（免费模型限流非常常见）。
  */
-async function requestJSON(url, { apiKey, body, timeout, retries = 2 }) {
+async function requestJSON(url, { apiKey, body, timeout, retries = 2, authStyle = 'bearer' }) {
     let lastErr = new Error('模型服务调用失败')
 
     for (let attempt = 0; attempt <= retries; attempt++) {
@@ -51,7 +56,7 @@ async function requestJSON(url, { apiKey, body, timeout, retries = 2 }) {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${apiKey}`
+                    ...authHeaders(apiKey, authStyle)
                 },
                 body: JSON.stringify(body),
                 signal: controller.signal
@@ -91,26 +96,34 @@ async function requestJSON(url, { apiKey, body, timeout, retries = 2 }) {
  */
 async function chat(messages, options = {}) {
     const config = getTextConfig(options.config)
-    if (!config.apiKey) throw new Error('服务端未配置文本模型 API Key，请在 server/.env 中配置 TEXT_API_KEY')
-    if (isPlaceholderKey(config.apiKey)) throw new Error('server/.env 中的 TEXT_API_KEY 仍是占位符，请替换为真实密钥（或在前端设置页填写）')
+    const provider = getProvider(config.provider)
+    if (!config.apiKey && !provider.optionalKey) {
+        throw new Error(`服务端未配置文本模型 API Key，请在 server/.env 中配置 TEXT_API_KEY，或在页面「设置」中填写 ${provider.name} 的密钥`)
+    }
+    if (config.apiKey && isPlaceholderKey(config.apiKey)) throw new Error('TEXT_API_KEY 仍是占位符，请替换为真实密钥（或在前端设置页填写）')
 
+    const reasoning = isReasoningModel(config.model)
     const body = {
         model: config.model,
         messages,
-        temperature: options.temperature ?? config.temperature,
         stream: false
     }
-    if (options.maxTokens) body.max_tokens = options.maxTokens
+    // o1 / o3 等推理模型不支持 temperature，且用 max_completion_tokens
+    if (!reasoning) body.temperature = options.temperature ?? config.temperature
+    if (options.maxTokens) body[reasoning ? 'max_completion_tokens' : 'max_tokens'] = options.maxTokens
     if (options.tools && options.tools.length) {
         body.tools = options.tools
         if (options.toolChoice) body.tool_choice = options.toolChoice
     }
-    if (options.responseFormat) body.response_format = options.responseFormat
+    // 部分服务商不支持 response_format，按厂商能力决定
+    if (options.responseFormat && provider.jsonMode !== false) body.response_format = options.responseFormat
 
     const data = await requestJSON(chatEndpoint(config.baseUrl), {
         apiKey: config.apiKey,
         body,
-        timeout: config.timeout
+        timeout: config.timeout,
+        retries: options.retries,
+        authStyle: provider.authStyle
     })
 
     const choice = data.choices?.[0] || {}
@@ -179,8 +192,9 @@ async function chatJSON(messages, options = {}) {
  */
 async function chatStream(messages, { onDelta, config: override, temperature, maxTokens } = {}) {
     const config = getTextConfig(override)
-    if (!config.apiKey) throw new Error('服务端未配置文本模型 API Key，请在 server/.env 中配置 TEXT_API_KEY')
-    if (isPlaceholderKey(config.apiKey)) throw new Error('server/.env 中的 TEXT_API_KEY 仍是占位符，请替换为真实密钥（或在前端设置页填写）')
+    const provider = getProvider(config.provider)
+    if (!config.apiKey && !provider.optionalKey) throw new Error('服务端未配置文本模型 API Key，请在 server/.env 中配置 TEXT_API_KEY')
+    if (config.apiKey && isPlaceholderKey(config.apiKey)) throw new Error('TEXT_API_KEY 仍是占位符，请替换为真实密钥（或在前端设置页填写）')
 
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), config.timeout)
@@ -190,7 +204,7 @@ async function chatStream(messages, { onDelta, config: override, temperature, ma
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${config.apiKey}`
+                ...authHeaders(config.apiKey, provider.authStyle)
             },
             body: JSON.stringify({
                 model: config.model,
@@ -277,12 +291,14 @@ async function generateImage(prompt, options = {}) {
  */
 async function visionRecognize({ base64, mime = 'image/jpeg', prompt, config: override }) {
     const config = getVisionConfig(override)
-    if (!config.apiKey) throw new Error('服务端未配置视觉模型 API Key，请在 server/.env 中配置 VISION_API_KEY 或 TEXT_API_KEY')
-    if (isPlaceholderKey(config.apiKey)) throw new Error('server/.env 中的视觉/文本模型 API Key 仍是占位符，请替换为真实密钥（或在前端设置页填写）')
+    const provider = getProvider(config.provider)
+    if (!config.apiKey && !provider.optionalKey) throw new Error('服务端未配置视觉模型 API Key，请在 server/.env 中配置 VISION_API_KEY 或 TEXT_API_KEY')
+    if (config.apiKey && isPlaceholderKey(config.apiKey)) throw new Error('视觉/文本模型 API Key 仍是占位符，请替换为真实密钥（或在前端设置页填写）')
 
     const data = await requestJSON(chatEndpoint(config.baseUrl), {
         apiKey: config.apiKey,
         timeout: config.timeout,
+        authStyle: provider.authStyle,
         body: {
             model: config.model,
             messages: [

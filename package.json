@@ -5,6 +5,7 @@
     "scripts": {
         "dev": "vite",
         "server": "npm --prefix server run dev",
+        "start": "node scripts/start.js",
         "dev:all": "concurrently -n server,web -c green,cyan \"npm:server\" \"npm:dev\"",
         "build": "vue-tsc --noEmit && vite build",
         "build:netlify": "vite build --config vite.config.prod.ts",

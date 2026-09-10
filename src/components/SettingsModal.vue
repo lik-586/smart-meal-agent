@@ -60,6 +60,29 @@
                                     </h3>
 
                                     <div class="space-y-4">
+                                        <!-- AI服务商 -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">AI 服务商</label>
+                                            <select
+                                                v-model="textProvider"
+                                                @change="onTextProviderChange"
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+                                            >
+                                                <option v-for="p in providers" :key="p.id" :value="p.id">{{ p.icon }} {{ p.name }}</option>
+                                            </select>
+                                            <p class="text-xs text-gray-500 mt-1">
+                                                {{ currentTextProvider?.tip || '选择服务商后会自动填入 API 地址与推荐模型' }}
+                                                <a
+                                                    v-if="currentTextProvider?.keyUrl"
+                                                    :href="currentTextProvider.keyUrl"
+                                                    target="_blank"
+                                                    rel="noopener"
+                                                    class="text-blue-500 hover:underline ml-1"
+                                                    >申请密钥 ↗</a
+                                                >
+                                            </p>
+                                        </div>
+
                                         <!-- API地址 -->
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700 mb-2">API地址</label>
@@ -69,7 +92,7 @@
                                                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                                                 placeholder="https://api.example.com/v1/"
                                             />
-                                            <p class="text-xs text-gray-500 mt-1">基础API地址，系统会自动添加 /chat/completions 路径</p>
+                                            <p class="text-xs text-gray-500 mt-1">基础API地址，系统会自动添加 /chat/completions 路径；也可手动改成任意 OpenAI 兼容地址</p>
                                         </div>
 
                                         <!-- 配置项网格 -->
@@ -104,7 +127,7 @@
                                                     step="0.1"
                                                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                                                 />
-                                                <p class="text-xs text-gray-500 mt-1">控制回答的创造性，0.7为推荐值</p>
+                                                <p class="text-xs text-gray-500 mt-1">控制回答的创造性，0.7为推荐值（推理模型会自动忽略）</p>
                                             </div>
 
                                             <div>
@@ -116,6 +139,21 @@
                                                     placeholder="300000"
                                                 />
                                             </div>
+                                        </div>
+
+                                        <!-- 连通性测试 -->
+                                        <div class="flex flex-wrap items-center gap-3 pt-1">
+                                            <button
+                                                type="button"
+                                                @click="testConnection"
+                                                :disabled="testing"
+                                                class="px-3 py-2 bg-gray-800 text-white rounded hover:bg-gray-900 disabled:opacity-50 transition-colors text-sm"
+                                            >
+                                                {{ testing ? '测试中...' : '🔌 测试连接' }}
+                                            </button>
+                                            <span v-if="testResult" class="text-xs" :class="testResult.success ? 'text-green-600' : 'text-red-600'">
+                                                {{ testResult.message }}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
@@ -135,6 +173,25 @@
                                     </h3>
 
                                     <div class="space-y-4">
+                                        <!-- 图片服务商 -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">AI 服务商</label>
+                                            <select
+                                                v-model="imageProvider"
+                                                @change="onImageProviderChange"
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm bg-white"
+                                            >
+                                                <option v-for="p in providers" :key="p.id" :value="p.id">{{ p.icon }} {{ p.name }}</option>
+                                            </select>
+                                            <p class="text-xs text-gray-500 mt-1">
+                                                {{
+                                                    currentImageProvider?.supportsImage
+                                                        ? '该服务商提供文生图能力，已填入推荐图片模型'
+                                                        : '该服务商未提供文生图，可自行填写其它图片接口地址'
+                                                }}
+                                            </p>
+                                        </div>
+
                                         <!-- API地址 -->
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700 mb-2">API地址</label>
@@ -195,8 +252,9 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import { useSettingsStore } from '../stores/settings'
+import { apiGet, apiPost } from '@/services/http'
 
 const props = defineProps({
     isVisible: {
@@ -246,11 +304,72 @@ const imageConfig = reactive({
     model: ''
 })
 
+// 可选 AI 服务商（从后端拉取，支持多家 OpenAI 兼容接口）
+const providers = ref([])
+const textProvider = ref('')
+const imageProvider = ref('')
+const testing = ref(false)
+const testResult = ref(null)
+
+const currentTextProvider = computed(() => providers.value.find(p => p.id === textProvider.value) || null)
+const currentImageProvider = computed(() => providers.value.find(p => p.id === imageProvider.value) || null)
+
+// 拉取服务商清单
+const loadProviders = async () => {
+    try {
+        const data = await apiGet('/config/providers')
+        providers.value = data?.providers || []
+    } catch (error) {
+        console.warn('获取服务商列表失败:', error)
+    }
+}
+
+// 切换服务商：自动填入 API 地址与推荐模型
+const onTextProviderChange = () => {
+    const provider = currentTextProvider.value
+    if (!provider) return
+    if (provider.baseUrl) textConfig.baseUrl = provider.baseUrl
+    if (provider.defaultModel) textConfig.model = provider.defaultModel
+    testResult.value = null
+}
+
+const onImageProviderChange = () => {
+    const provider = currentImageProvider.value
+    if (!provider) return
+    if (provider.baseUrl) imageConfig.baseUrl = provider.baseUrl
+    const recommended = provider.imageModel || provider.defaultModel
+    if (recommended) imageConfig.model = recommended
+}
+
+// 测试当前填写的服务商配置是否可用
+const testConnection = async () => {
+    testing.value = true
+    testResult.value = null
+    try {
+        const data = await apiPost('/config/test', {
+            config: {
+                provider: textProvider.value || undefined,
+                baseUrl: textConfig.baseUrl,
+                apiKey: textConfig.apiKey,
+                model: textConfig.model
+            }
+        })
+        testResult.value = data?.success
+            ? { success: true, message: `✅ 连接成功（${data.provider} · ${data.model} · ${data.latencyMs}ms）` }
+            : { success: false, message: `❌ 连接失败：${data?.error || '未知错误'}` }
+    } catch (error) {
+        testResult.value = { success: false, message: `❌ 连接失败：${error.message}` }
+    } finally {
+        testing.value = false
+    }
+}
+
 // 监听弹窗显示状态，加载当前配置并控制背景滚动
 watch(
     () => props.isVisible,
     visible => {
         if (visible) {
+            loadProviders()
             loadCurrentSettings()
             // 阻止背景页面滚动
             document.body.style.overflow = 'hidden'
@@ -266,6 +385,7 @@ const loadCurrentSettings = () => {
     const settings = settingsStore.getSettings()
 
     // 加载文本生成配置
+    textProvider.value = settings.textGeneration.provider || ''
     textConfig.baseUrl = settings.textGeneration.baseUrl
     textConfig.apiKey = settings.textGeneration.apiKey
     textConfig.model = settings.textGeneration.model
@@ -273,15 +393,18 @@ const loadCurrentSettings = () => {
     textConfig.timeout = settings.textGeneration.timeout
 
     // 加载图片生成配置
+    imageProvider.value = settings.imageGeneration.provider || ''
     imageConfig.baseUrl = settings.imageGeneration.baseUrl
     imageConfig.apiKey = settings.imageGeneration.apiKey
     imageConfig.model = settings.imageGeneration.model
+    testResult.value = null
 }
 
 // 保存设置
 const saveSettings = () => {
     const newSettings = {
         textGeneration: {
+            provider: textProvider.value,
             baseUrl: textConfig.baseUrl,
             apiKey: textConfig.apiKey,
             model: textConfig.model,
@@ -289,6 +412,7 @@ const saveSettings = () => {
             timeout: textConfig.timeout
         },
         imageGeneration: {
+            provider: imageProvider.value,
             baseUrl: imageConfig.baseUrl,
             apiKey: imageConfig.apiKey,
             model: imageConfig.model

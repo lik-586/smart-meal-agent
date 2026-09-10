@@ -139,6 +139,15 @@
                                 <span>封神图鉴</span>
                             </router-link>
                             <router-link
+                                to="/agent"
+                                @click="showMoreMenu = false"
+                                class="flex items-center gap-2 px-4 py-3 text-sm font-bold transition-colors duration-200 hover:bg-gray-100"
+                                :class="$route.path === '/agent' ? 'bg-yellow-100 text-gray-800' : 'text-gray-700'"
+                            >
+                                <span>🤖</span>
+                                <span>智能体工作台</span>
+                            </router-link>
+                            <router-link
                                 to="/about"
                                 @click="showMoreMenu = false"
                                 class="flex items-center gap-2 px-4 py-3 text-sm font-bold transition-colors duration-200 hover:bg-gray-100"

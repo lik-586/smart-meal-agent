@@ -153,8 +153,9 @@ function normalizeIngredients(ingredients) {
  * @param {string[]} ingredients 用户提供的食材
  * @param {object} cuisine 菜系对象 { id, name }
  * @param {string} [overrideName] 指定菜名（如按菜名查询失败时，直接用用户要的菜名）
+ * @param {string} [reason] AI 失败原因（透出给用户，便于定位问题）
  */
-function fallbackRecipe(ingredients, cuisine, overrideName) {
+function fallbackRecipe(ingredients, cuisine, overrideName, reason) {
     const list = FALLBACK_DISHES[cuisine?.id] || FALLBACK_DISHES.custom
     const userItems = normalizeIngredients(ingredients)
     const scored = list.map(dish => ({

@@ -1,16 +1,17 @@
 @echo off
+chcp 65001 >nul
 setlocal enabledelayedexpansion
-title ÖÇÄÜÃÀÊ³´îÅäÖúÊÖ - Æô¶¯Æ÷
+title æ™ºèƒ½ç¾Žé£Ÿæ­é…åŠ©æ‰‹
 cd /d "%~dp0"
 
 echo.
 echo  ====================================================
-echo      ÖÇÄÜÃÀÊ³´îÅäÖúÊÖ  -  Ò»¼üÆô¶¯
+echo      æ™ºèƒ½ç¾Žé£Ÿæ­é…åŠ©æ‰‹  -  ä¸€é”®å¯åŠ¨ï¼ˆå•çª—å£ï¼‰
 echo  ====================================================
 echo.
 
 REM ==========================================================
-REM  µÚ 1 ²½£º¶¨Î» Node.js
+REM  å®šä½ Node.js
 REM ==========================================================
 set "NODE_EXE="
 
@@ -21,7 +22,6 @@ if !errorlevel!==0 (
     )
 )
 
-REM PATH ÀïÃ»ÓÐÊ±£¬³¢ÊÔ³£¼ûµÄ°²×°Î»ÖÃ
 if not defined NODE_EXE (
     for /d %%d in ("%USERPROFILE%\.workbuddy\binaries\node\versions\*") do (
         if exist "%%d\node.exe" set "NODE_EXE=%%d\node.exe"
@@ -35,12 +35,12 @@ if not defined NODE_EXE (
 )
 
 if not defined NODE_EXE (
-    echo  [X] Ã»ÓÐ¼ì²âµ½ Node.js ÔËÐÐ»·¾³
+    echo  [X] æ²¡æœ‰æ£€æµ‹åˆ° Node.js è¿è¡ŒçŽ¯å¢ƒ
     echo.
-    echo      ÇëÏÈ°²×° Node.js 18 »ò¸ü¸ß°æ±¾£º
+    echo      è¯·å…ˆå®‰è£… Node.js 18 æˆ–æ›´é«˜ç‰ˆæœ¬ï¼š
     echo        https://nodejs.org/zh-cn/download
     echo.
-    echo      °²×°Ê±¹´Ñ¡ "Add to PATH"£¬×°ºÃºóÖØÐÂË«»÷±¾ÎÄ¼þ¡£
+    echo      å®‰è£…æ—¶å‹¾é€‰ "Add to PATH"ï¼Œè£…å¥½åŽé‡æ–°åŒå‡»æœ¬æ–‡ä»¶ã€‚
     echo.
     pause
     exit /b 1
@@ -48,97 +48,21 @@ if not defined NODE_EXE (
 
 for %%i in ("!NODE_EXE!") do set "NODE_DIR=%%~dpi"
 set "PATH=!NODE_DIR!;!PATH!"
-set "NPM_CMD=!NODE_DIR!npm.cmd"
 
-echo  [1/5] Node.js  : !NODE_EXE!
-
-REM ==========================================================
-REM  µÚ 2 ²½£ºÇåÀí¿ÉÄÜ²ÐÁôµÄ¾É½ø³Ì£¨¶Ë¿Ú 3001 / 5173£©
-REM ==========================================================
-for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":3001 " ^| findstr "LISTENING"') do taskkill /f /pid %%p >nul 2>nul
-for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":5173 " ^| findstr "LISTENING"') do taskkill /f /pid %%p >nul 2>nul
-
-REM ==========================================================
-REM  µÚ 3 ²½£º°²×°ÒÀÀµ£¨ÒÑ×°¹ý»á×Ô¶¯Ìø¹ý£©
-REM ==========================================================
-if not exist "node_modules\" (
-    echo  [2/5] Ê×´ÎÔËÐÐ£¬ÕýÔÚ°²×°Ç°¶ËÒÀÀµ£¬ÇëÉÔºò...
-    call "!NPM_CMD!" install --no-audit --no-fund
-    if !errorlevel! neq 0 (
-        echo  [X] Ç°¶ËÒÀÀµ°²×°Ê§°Ü£¬Çë¼ì²éÍøÂçºóÖØÊÔ
-        pause
-        exit /b 1
-    )
-) else (
-    echo  [2/5] Ç°¶ËÒÀÀµÒÑ´æÔÚ£¬Ìø¹ý°²×°
-)
-
-if not exist "server\node_modules\" (
-    echo  [3/5] Ê×´ÎÔËÐÐ£¬ÕýÔÚ°²×°ºó¶ËÒÀÀµ£¬ÇëÉÔºò...
-    call "!NPM_CMD!" --prefix server install --no-audit --no-fund
-    if !errorlevel! neq 0 (
-        echo  [X] ºó¶ËÒÀÀµ°²×°Ê§°Ü£¬Çë¼ì²éÍøÂçºóÖØÊÔ
-        pause
-        exit /b 1
-    )
-) else (
-    echo  [3/5] ºó¶ËÒÀÀµÒÑ´æÔÚ£¬Ìø¹ý°²×°
-)
-
-REM ==========================================================
-REM  µÚ 4 ²½£º×¼±¸ºó¶ËÅäÖÃÎÄ¼þ
-REM ==========================================================
-if not exist "server\.env" (
-    if exist "server\.env.example" (
-        copy /y "server\.env.example" "server\.env" >nul
-        echo  [ÌáÊ¾] ÒÑ×Ô¶¯Éú³É server\.env
-    )
-)
-
-set "NEED_KEY=0"
-if exist "server\.env" (
-    findstr /C:"your-text-api-key" "server\.env" >nul
-    if !errorlevel!==0 set "NEED_KEY=1"
-)
-
-echo  [4/5] ÅäÖÃÎÄ¼þ¼ì²éÍê³É
-
-REM ==========================================================
-REM  µÚ 5 ²½£ºÆô¶¯ºó¶ËÓëÇ°¶Ë£¨·Ö±ð¿ªÒ»¸ö´°¿Ú£¬·½±ã¿´ÈÕÖ¾£©
-REM ==========================================================
-echo  [5/5] ÕýÔÚÆô¶¯·þÎñ...
+echo  Node.js : !NODE_EXE!
+echo  åŽç«¯ä¸Žå‰ç«¯ä¼šåœ¨æœ¬çª—å£å†…ä¸€èµ·å¯åŠ¨ï¼Œæ—¥å¿—ç»Ÿä¸€æ˜¾ç¤ºåœ¨è¿™é‡Œã€‚
+echo  ï¼ˆåœæ­¢æœåŠ¡ï¼šåœ¨æœ¬çª—å£æŒ‰ Ctrl + Cï¼›è‹¥å‡ºçŽ° Y/N æç¤ºï¼Œè¾“å…¥ Y å›žè½¦ï¼‰
 echo.
 
-start "ºó¶Ë·þÎñ - 3001" cmd /k "cd /d "%~dp0" && "!NPM_CMD!" --prefix server run dev"
-timeout /t 2 /nobreak >nul
-start "Ç°¶Ë·þÎñ - 5173" cmd /k "cd /d "%~dp0" && "!NPM_CMD!" run dev"
-
-echo  ÕýÔÚµÈ´ý·þÎñ¾ÍÐ÷£¬Ô¼ 10 Ãë...
-timeout /t 10 /nobreak >nul
+REM ==========================================================
+REM  å•çª—å£å¯åŠ¨ï¼šä¾èµ–å®‰è£… + åŽç«¯(3001) + å‰ç«¯(5173)
+REM  æœåŠ¡åœæ­¢åŽï¼ˆCtrl+Cï¼‰æ‰ä¼šå›žåˆ°ä¸‹é¢çš„æç¤º
+REM ==========================================================
+"!NODE_EXE!" "%~dp0scripts\start.js"
 
 echo.
-echo  ====================================================
-echo   Æô¶¯Íê³É
-echo  ----------------------------------------------------
-echo    Ç°¶ËÒ³Ãæ :  http://localhost:5173
-echo    ºó¶Ë½Ó¿Ú :  http://localhost:3001/api/health
-echo    ÖÇÄÜÌå   :  http://localhost:5173/agent
-echo  ====================================================
-echo.
-
-if "!NEED_KEY!"=="1" (
-    echo  [!] ÖØÒª£ºserver\.env Àï»¹ÊÇÕ¼Î»µÄ API Key
-    echo      Çë´ò¿ª server\.env ÌîÐ´ TEXT_API_KEY£¬
-    echo      »òÖ±½ÓÔÚÍøÒ³ÓÒÉÏ½Ç¡¸ÉèÖÃ¡¹ÀïÌîÐ´×Ô¼ºµÄ Key¡£
-    echo      ÌîºÃºóÖØÆôºó¶Ë´°¿Ú£¨Ctrl+C ºóÖØÐÂÖ´ÐÐ npm run server£©¡£
-    echo.
-)
-
-start "" http://localhost:5173
-
-echo  ÌáÊ¾£ºÖ±½Ó¹Ø±ÕÄÇÁ½¸öºÚÉ«´°¿Ú¼´¿ÉÍ£Ö¹·þÎñ£¬
-echo        Ò²¿ÉÒÔË«»÷¡¸Í£Ö¹ÏîÄ¿.bat¡¹¡£
-echo.
-echo  ±¾´°¿Ú¿ÉÒÔÖ±½Ó¹Øµô£¬²»Ó°Ïì·þÎñÔËÐÐ¡£
+echo  æœåŠ¡å·²åœæ­¢ã€‚
+echo     - é‡æ–°è¿è¡Œï¼šåŒå‡»æœ¬æ–‡ä»¶ï¼Œæˆ–æ‰§è¡Œ npm start
+echo     - å¦‚éœ€å¼ºåˆ¶ç»“æŸï¼šåŒå‡»ã€Œåœæ­¢é¡¹ç›®.batã€
 echo.
 pause

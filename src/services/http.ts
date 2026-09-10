@@ -33,6 +33,7 @@ const aiHeaders = (kind: AiKind = 'text'): Record<string, string> => {
         const cfg: any = kind === 'image' ? getImageGenerationConfig() : getTextGenerationConfig()
         if (!cfg?.apiKey) return {}
         return {
+            'X-AI-Provider': cfg.provider || '',
             'X-AI-Base-Url': cfg.baseUrl || '',
             'X-AI-Api-Key': cfg.apiKey || '',
             'X-AI-Model': cfg.model || ''

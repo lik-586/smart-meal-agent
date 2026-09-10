@@ -4,7 +4,10 @@
         <div class="bg-pink-400 text-white p-3 md:p-6 border-b-2 border-black">
             <div class="flex items-start justify-between gap-2">
                 <div class="flex-1 min-w-0">
-                    <h3 class="text-base md:text-lg font-bold mb-2 line-clamp-2">{{ recipe.name }}</h3>
+                    <div class="flex items-center gap-2 flex-wrap mb-2">
+                        <h3 class="text-base md:text-lg font-bold line-clamp-2">{{ recipe.name }}</h3>
+                        <span v-if="recipe.fallback" class="bg-white/25 border border-white/40 px-2 py-0.5 rounded text-xs whitespace-nowrap">🛟 保底推荐</span>
+                    </div>
                     <!-- 移动端：垂直布局 -->
                     <div class="flex flex-col gap-1 md:hidden">
                         <div class="flex items-center gap-2">

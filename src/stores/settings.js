@@ -3,6 +3,7 @@ import { ref, reactive } from 'vue'
 // 默认配置（从环境变量读取）
 const getDefaultSettings = () => ({
     textGeneration: {
+        provider: import.meta.env.VITE_TEXT_PROVIDER || '',
         baseUrl: import.meta.env.VITE_TEXT_GENERATION_BASE_URL,
         apiKey: import.meta.env.VITE_TEXT_GENERATION_API_KEY,
         model: import.meta.env.VITE_TEXT_GENERATION_MODEL,
@@ -10,6 +11,7 @@ const getDefaultSettings = () => ({
         timeout: parseInt(import.meta.env.VITE_TEXT_GENERATION_TIMEOUT) || 300000
     },
     imageGeneration: {
+        provider: import.meta.env.VITE_IMAGE_PROVIDER || '',
         baseUrl: import.meta.env.VITE_IMAGE_GENERATION_BASE_URL,
         apiKey: import.meta.env.VITE_IMAGE_GENERATION_API_KEY,
         model: import.meta.env.VITE_IMAGE_GENERATION_MODEL
