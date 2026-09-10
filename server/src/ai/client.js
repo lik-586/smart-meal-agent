@@ -101,24 +101,30 @@ function safeParseArgs(args) {
 }
 
 /**
- * 对话并要求模型返回 JSON（失败会自动重试一次）
+ * 对话并要求模型返回 JSON（空内容 / 非法 JSON 自动重试，最多 3 次尝试）
+ * 并发调用大模型时，服务商偶发返回空内容或被限流截断，重试即可恢复。
  */
 async function chatJSON(messages, options = {}) {
-    const result = await chat(messages, { ...options, responseFormat: options.responseFormat || { type: 'json_object' } })
-    try {
-        return extractJSON(result.content)
-    } catch (err) {
-        // 兼容不支持 json_object 的服务商：再请求一次并强调只输出 JSON
-        const retry = await chat(
-            [
-                ...messages,
-                { role: 'assistant', content: result.content },
-                { role: 'user', content: '你上一次的回复不是合法 JSON，请只输出纯 JSON 文本，不要包含任何解释、标记或代码块。' }
-            ],
-            { ...options, responseFormat: undefined }
-        )
-        return extractJSON(retry.content)
+    const maxAttempts = 3
+    let lastErr = null
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+            const result = await chat(messages, {
+                ...options,
+                responseFormat: attempt === 1 ? options.responseFormat || { type: 'json_object' } : undefined
+            })
+            const content = String(result.content || '').trim()
+            if (!content) throw new Error('模型返回内容为空（可能被限流或超时截断）')
+            return extractJSON(content)
+        } catch (err) {
+            lastErr = err
+            if (attempt < maxAttempts) {
+                // 指数退避：1s、2s，缓解并发限流
+                await new Promise(r => setTimeout(r, attempt * 1000))
+            }
+        }
     }
+    throw lastErr
 }
 
 /**

@@ -1,6 +1,7 @@
 /** 菜谱生成服务 */
 const { chatJSON } = require('../ai/client')
 const { uid } = require('../utils')
+const { fallbackRecipe } = require('./recipeFallback')
 
 const RECIPE_JSON_TEMPLATE = `{
   "name": "菜品名称",
@@ -45,13 +46,20 @@ async function generateRecipe({ ingredients, cuisine, customPrompt, config }) {
 
 用户提供的食材：${(ingredients || []).join('、')}`
     if (customPrompt) prompt += `\n\n用户的特殊要求：${customPrompt}`
-    prompt += `\n\n${DETAIL_REQUIREMENT}\n\n请按照以下JSON格式返回菜谱：\n${RECIPE_JSON_TEMPLATE}`
+    prompt += `\n\n${DETAIL_REQUIREMENT}\n\n请按照以下JSON格式返回菜谱：\n${RECIPE_JSON_TEMPLATE}${JSON_OUTPUT_RULE}`
 
-    const data = await chatJSON([{ role: 'system', content: CHEF_SYSTEM }, { role: 'user', content: prompt }], {
-        config,
-        temperature: config?.temperature ?? 0.7,
-        maxTokens: 3000
-    })
+    let data
+    try {
+        data = await chatJSON([{ role: 'system', content: CHEF_SYSTEM }, { role: 'user', content: prompt }], {
+            config,
+            temperature: config?.temperature ?? 0.7,
+            maxTokens: 4096
+        })
+    } catch (err) {
+        // AI 多次重试仍失败：本地经典菜库兜底，保证永远能出菜谱
+        console.error('[recipe] AI 生成失败，启用本地兜底菜谱:', err.message)
+        return fallbackRecipe(ingredients, cuisine)
+    }
 
     return normalizeRecipe(data, {
         id: uid(`recipe-${cuisine?.id || 'custom'}`),
@@ -75,17 +83,23 @@ ${DETAIL_REQUIREMENT}
 请按照以下JSON格式返回菜谱：
 ${RECIPE_JSON_TEMPLATE}${JSON_OUTPUT_RULE}`
 
-    const data = await chatJSON(
-        [
-            {
-                role: 'system',
-                content:
-                    '你是一位经验丰富的专业厨师，擅长根据用户需求定制菜谱。你的菜谱详细实用，让新手也能成功制作美味佳肴。请严格按照JSON格式返回，不要包含任何其他文字。'
-            },
-            { role: 'user', content: prompt }
-        ],
-        { config, maxTokens: 4096 }
-    )
+    let data
+    try {
+        data = await chatJSON(
+            [
+                {
+                    role: 'system',
+                    content:
+                        '你是一位经验丰富的专业厨师，擅长根据用户需求定制菜谱。你的菜谱详细实用，让新手也能成功制作美味佳肴。请严格按照JSON格式返回，不要包含任何其他文字。'
+                },
+                { role: 'user', content: prompt }
+            ],
+            { config, maxTokens: 4096 }
+        )
+    } catch (err) {
+        console.error('[recipe] 自定义菜谱 AI 失败，启用本地兜底:', err.message)
+        return normalizeRecipe(fallbackRecipe(ingredients, { id: 'custom', name: '家常菜' }), { id: uid('recipe-custom'), cuisine: '自定义', ingredients })
+    }
 
     return normalizeRecipe(data, { id: uid('recipe-custom'), cuisine: '自定义', ingredients })
 }
@@ -104,17 +118,23 @@ async function generateDishRecipeByName({ dishName, config }) {
 请按照以下JSON格式返回菜谱：
 ${RECIPE_JSON_TEMPLATE}`
 
-    const data = await chatJSON(
-        [
-            {
-                role: 'system',
-                content:
-                    '你是一位经验丰富的中华料理大师，精通各种菜系的制作方法和传统工艺。请根据用户提供的菜名，生成详细、实用、专业的制作教程。请严格按照JSON格式返回，不要包含任何其他文字。请务必用中文回答。'
-            },
-            { role: 'user', content: prompt }
-        ],
-        { config, temperature: 0.7 }
-    )
+    let data
+    try {
+        data = await chatJSON(
+            [
+                {
+                    role: 'system',
+                    content:
+                        '你是一位经验丰富的中华料理大师，精通各种菜系的制作方法和传统工艺。请根据用户提供的菜名，生成详细、实用、专业的制作教程。请严格按照JSON格式返回，不要包含任何其他文字。请务必用中文回答。'
+                },
+                { role: 'user', content: prompt }
+            ],
+            { config, temperature: 0.7, maxTokens: 4096 }
+        )
+    } catch (err) {
+        console.error('[recipe] 按菜名查询 AI 失败，启用本地兜底:', err.message)
+        return normalizeRecipe(fallbackRecipe([], { id: 'custom', name: '传统菜谱' }, dishName), { id: uid('dish-search'), name: dishName, cuisine: '传统菜谱' })
+    }
 
     return normalizeRecipe(data, { id: uid('dish-search'), name: dishName, cuisine: '传统菜谱' })
 }
