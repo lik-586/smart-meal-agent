@@ -4,7 +4,7 @@
             <!-- 桌面端导航 -->
             <div class="hidden md:flex items-center justify-between">
                 <!-- Logo区域 -->
-                <router-link to="/" class="flex items-center gap-3 transition-transform duration-200" @click="rotateLogo">
+                <router-link to="/" class="flex items-center gap-3 shrink-0 transition-transform duration-200" @click="rotateLogo">
                     <div
                         class="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center border-2 border-[#0A0910]"
                         :class="{ 'rotate-logo': isLogoRotating }"
@@ -19,14 +19,14 @@
                     </div>
                 </router-link>
 
-                <!-- 导航菜单 -->
-                <div class="flex items-center gap-2">
+                <!-- 导航菜单（空间不足时整体自动换行，按钮文字不拆散） -->
+                <div class="nav-menu flex flex-wrap items-center justify-end gap-x-2 gap-y-2">
                     <!-- 用户/登录控件 -->
                     <router-link
                         v-if="auth.loggedIn.value"
                         to="/sessions"
-                        class="flex items-center gap-1 px-3 py-2 rounded-lg font-bold border-2 border-[#0A0910] transition-all duration-200 transform hover:scale-105 text-sm"
-                        :class="$route.path.startsWith('/sessions') || $route.path === '/consultant' ? 'bg-yellow-400 text-gray-800' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                        class="flex items-center gap-1 px-3 py-2 rounded-lg font-bold border-2 border-[#0A0910] transition-all duration-200 transform hover:scale-105 text-sm whitespace-nowrap shrink-0"
+                        :class="$route.path.startsWith('/sessions') ? 'bg-yellow-400 text-gray-800' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
                         :title="`当前用户：${auth.user.value?.username || ''}`"
                     >
                         <span>👤</span>
@@ -53,7 +53,7 @@
                     <!-- 主要功能 -->
                     <router-link
                         to="/"
-                        class="flex items-center gap-1 px-3 py-2 rounded-lg font-bold border-2 border-[#0A0910] transition-all duration-200 transform hover:scale-105 text-sm"
+                        class="flex items-center gap-1 px-3 py-2 rounded-lg font-bold border-2 border-[#0A0910] transition-all duration-200 transform hover:scale-105 text-sm whitespace-nowrap shrink-0"
                         :class="$route.path === '/' ? 'bg-yellow-400 text-gray-800' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
                     >
                         <span>🏠</span>
@@ -61,7 +61,7 @@
                     </router-link>
                     <router-link
                         to="/today-eat"
-                        class="flex items-center gap-1 px-3 py-2 rounded-lg font-bold border-2 border-[#0A0910] transition-all duration-200 transform hover:scale-105 text-sm"
+                        class="flex items-center gap-1 px-3 py-2 rounded-lg font-bold border-2 border-[#0A0910] transition-all duration-200 transform hover:scale-105 text-sm whitespace-nowrap shrink-0"
                         :class="$route.path === '/today-eat' ? 'bg-yellow-400 text-gray-800' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
                     >
                         <span>🎲</span>
@@ -69,7 +69,7 @@
                     </router-link>
                     <router-link
                         to="/table-design"
-                        class="flex items-center gap-1 px-3 py-2 rounded-lg font-bold border-2 border-[#0A0910] transition-all duration-200 transform hover:scale-105 text-sm"
+                        class="flex items-center gap-1 px-3 py-2 rounded-lg font-bold border-2 border-[#0A0910] transition-all duration-200 transform hover:scale-105 text-sm whitespace-nowrap shrink-0"
                         :class="$route.path === '/table-design' ? 'bg-yellow-400 text-gray-800' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
                     >
                         <span>🍽️</span>
@@ -77,7 +77,7 @@
                     </router-link>
                     <router-link
                         to="/fortune-cooking"
-                        class="flex items-center gap-1 px-3 py-2 rounded-lg font-bold border-2 border-[#0A0910] transition-all duration-200 transform hover:scale-105 text-sm"
+                        class="flex items-center gap-1 px-3 py-2 rounded-lg font-bold border-2 border-[#0A0910] transition-all duration-200 transform hover:scale-105 text-sm whitespace-nowrap shrink-0"
                         :class="$route.path === '/fortune-cooking' ? 'bg-yellow-400 text-gray-800' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
                     >
                         <span>🔮</span>
@@ -85,28 +85,28 @@
                     </router-link>
                     <router-link
                         to="/sauce-design"
-                        class="flex items-center gap-1 px-3 py-2 rounded-lg font-bold border-2 border-[#0A0910] transition-all duration-200 transform hover:scale-105 text-sm"
+                        class="flex items-center gap-1 px-3 py-2 rounded-lg font-bold border-2 border-[#0A0910] transition-all duration-200 transform hover:scale-105 text-sm whitespace-nowrap shrink-0"
                         :class="$route.path === '/sauce-design' ? 'bg-yellow-400 text-gray-800' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
                     >
                         <span>🥄</span>
                         <span>酱料大师</span>
                     </router-link>
                     <router-link
-                        to="/agent"
-                        class="flex items-center gap-1 px-3 py-2 rounded-lg font-bold border-2 border-[#0A0910] transition-all duration-200 transform hover:scale-105 text-sm"
-                        :class="$route.path === '/agent' ? 'bg-yellow-400 text-gray-800' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                        to="/consultant"
+                        class="flex items-center gap-1 px-3 py-2 rounded-lg font-bold border-2 border-[#0A0910] transition-all duration-200 transform hover:scale-105 text-sm whitespace-nowrap shrink-0"
+                        :class="$route.path === '/consultant' ? 'bg-yellow-400 text-gray-800' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
                     >
-                        <span>🤖</span>
-                        <span>智能体</span>
+                        <span>👨‍🍳</span>
+                        <span>AI饮食顾问</span>
                     </router-link>
 
                     <!-- 更多菜单下拉 -->
-                    <div class="relative" @mouseleave="handleMouseLeave">
+                    <div class="relative shrink-0" @mouseleave="handleMouseLeave">
                         <button
                             @mouseenter="handleMouseEnter"
                             @click="showMoreMenu = !showMoreMenu"
                             :class="[
-                                'flex items-center gap-1 px-3 py-2 rounded-lg font-bold border-2 border-[#0A0910] transition-all duration-200 transform hover:scale-105 text-sm',
+                                'flex items-center gap-1 px-3 py-2 rounded-lg font-bold border-2 border-[#0A0910] transition-all duration-200 transform hover:scale-105 text-sm whitespace-nowrap',
                                 isMoreMenuActive ? 'bg-yellow-400 text-gray-800' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                             ]"
                         >
@@ -137,33 +137,6 @@
                             >
                                 <span>🖼️</span>
                                 <span>封神图鉴</span>
-                            </router-link>
-                            <router-link
-                                to="/agent"
-                                @click="showMoreMenu = false"
-                                class="flex items-center gap-2 px-4 py-3 text-sm font-bold transition-colors duration-200 hover:bg-gray-100"
-                                :class="$route.path === '/agent' ? 'bg-yellow-100 text-gray-800' : 'text-gray-700'"
-                            >
-                                <span>🤖</span>
-                                <span>智能体工作台</span>
-                            </router-link>
-                            <router-link
-                                to="/sessions"
-                                @click="showMoreMenu = false"
-                                class="flex items-center gap-2 px-4 py-3 text-sm font-bold transition-colors duration-200 hover:bg-gray-100"
-                                :class="$route.path === '/sessions' ? 'bg-yellow-100 text-gray-800' : 'text-gray-700'"
-                            >
-                                <span>📜</span>
-                                <span>我的会话</span>
-                            </router-link>
-                            <router-link
-                                to="/consultant"
-                                @click="showMoreMenu = false"
-                                class="flex items-center gap-2 px-4 py-3 text-sm font-bold transition-colors duration-200 hover:bg-gray-100"
-                                :class="$route.path === '/consultant' ? 'bg-yellow-100 text-gray-800' : 'text-gray-700'"
-                            >
-                                <span>👨‍🍳</span>
-                                <span>AI 饮食顾问</span>
                             </router-link>
                             <router-link
                                 to="/about"
@@ -209,7 +182,7 @@
                 </div>
 
                 <!-- 移动端菜单 - 横向滚动标签栏 -->
-                <div v-if="showMobileMenu" class="border-t-2 border-gray-200 pt-3 mt-3">
+                <div v-if="showMobileMenu" class="mobile-menu border-t-2 border-gray-200 pt-3 mt-3">
                     <!-- 横向滚动导航 -->
                     <div class="overflow-x-auto scrollbar-hide">
                         <div class="flex gap-2 pb-2 min-w-max">
@@ -259,15 +232,6 @@
                                 <span>玄学厨房</span>
                             </router-link>
                             <router-link
-                                to="/agent"
-                                @click="showMobileMenu = false"
-                                class="flex items-center gap-1.5 px-3 py-2 rounded-full font-bold border-2 border-[#0A0910] transition-all duration-200 whitespace-nowrap text-sm"
-                                :class="$route.path === '/agent' ? 'bg-yellow-400 text-gray-800 shadow-md' : 'bg-white text-gray-700 hover:bg-gray-50 active:scale-95'"
-                            >
-                                <span>🤖</span>
-                                <span>智能体</span>
-                            </router-link>
-                            <router-link
                                 to="/sessions"
                                 @click="showMobileMenu = false"
                                 class="flex items-center gap-1.5 px-3 py-2 rounded-full font-bold border-2 border-[#0A0910] transition-all duration-200 whitespace-nowrap text-sm"
@@ -283,7 +247,16 @@
                                 :class="$route.path === '/consultant' ? 'bg-yellow-400 text-gray-800 shadow-md' : 'bg-white text-gray-700 hover:bg-gray-50 active:scale-95'"
                             >
                                 <span>👨‍🍳</span>
-                                <span>饮食顾问</span>
+                                <span>AI饮食顾问</span>
+                            </router-link>
+                            <router-link
+                                to="/agent"
+                                @click="showMobileMenu = false"
+                                class="flex items-center gap-1.5 px-3 py-2 rounded-full font-bold border-2 border-[#0A0910] transition-all duration-200 whitespace-nowrap text-sm"
+                                :class="$route.path === '/agent' ? 'bg-yellow-400 text-gray-800 shadow-md' : 'bg-white text-gray-700 hover:bg-gray-50 active:scale-95'"
+                            >
+                                <span>🤖</span>
+                                <span>智能体工作台</span>
                             </router-link>
                             <router-link
                                 to="/favorites"
@@ -371,6 +344,10 @@ const pageTitle = computed(() => {
             return '我的收藏'
         case '/gallery':
             return '封神图鉴'
+        case '/sessions':
+            return '我的会话'
+        case '/consultant':
+            return 'AI 饮食顾问'
         case '/agent':
             return '智能体工作台'
         case '/about':
@@ -398,8 +375,6 @@ const pageSubtitle = computed(() => {
             return '珍藏美味，随时回味！'
         case '/gallery':
             return '每一帧都是厨艺的封神时刻！'
-        case '/agent':
-            return '自主思考 · 调用工具 · 端到端完成任务！'
         case '/about':
             return '工程实训大作业：基于 AI Agent 的智能美食搭配系统'
         default:
@@ -409,7 +384,7 @@ const pageSubtitle = computed(() => {
 
 // 检查更多菜单中的页面是否处于活跃状态
 const isMoreMenuActive = computed(() => {
-    return ['/favorites', '/gallery', '/about'].includes(route.path)
+    return ['/favorites', '/gallery', '/about', '/agent'].includes(route.path)
 })
 
 // 处理鼠标进入事件
@@ -456,7 +431,8 @@ const handleMouseLeave = () => {
     }
 }
 
-.flex {
+.nav-menu,
+.mobile-menu {
     animation: slideDown 0.3s ease-out;
 }
 

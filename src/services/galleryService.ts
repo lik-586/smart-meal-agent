@@ -85,6 +85,18 @@ export const loadGallery = (): Promise<void> => {
     return loadingPromise
 }
 
+/** 强制重新从后端拉取（登录后调用，重置缓存并刷新） */
+export const reloadGallery = (): Promise<void> => {
+    loadingPromise = null
+    return loadGallery()
+}
+
+/** 清空缓存并允许下次重新加载（登出后调用，避免串号） */
+export const clearGalleryCache = (): void => {
+    loadingPromise = null
+    images.value.splice(0, images.value.length)
+}
+
 class GalleryServiceClass {
     getGalleryImages(): GalleryImage[] {
         if (images.value.length === 0) loadGallery()

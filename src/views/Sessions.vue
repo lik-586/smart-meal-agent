@@ -95,22 +95,49 @@
                                     <div class="text-2xl">🍱</div>
                                     <div class="min-w-0">
                                         <div class="font-bold text-gray-800 truncate">{{ s.topic }}</div>
-                                        <div class="text-xs text-gray-500 mt-1">{{ formatTime(s.created_at) }}</div>
+                                        <div class="text-xs text-gray-500 mt-1">{{ formatTime(s.createdAt) }}</div>
                                         <!-- 摘要 -->
-                                        <div v-if="detailLoadingId !== s.id" class="text-sm text-gray-600 mt-1 line-clamp-2">
+                                        <div v-if="detailLoadingId === s.id" class="text-sm text-gray-400 mt-1 italic">加载详情中...</div>
+                                        <div v-else-if="summary(s) !== s.topic" class="text-sm text-gray-600 mt-1 line-clamp-2">
                                             {{ summary(s) }}
                                         </div>
-                                        <div v-else class="text-sm text-gray-400 mt-1 italic">加载详情中...</div>
                                         <!-- 展开的详情 -->
                                         <div v-if="expandedId === s.id" class="mt-3 bg-white border border-gray-200 rounded-lg p-3">
-                                            <div v-if="detail[s.id]" class="space-y-3">
-                                                <div>
-                                                    <div class="text-xs font-bold text-gray-500 mb-1">🤔 你的提问</div>
-                                                    <pre class="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 rounded p-2">{{ formatRequest(detail[s.id]) }}</pre>
+                                            <div v-if="detail[s.id]">
+                                                <!-- 对话形式：按一问一答的气泡展示 -->
+                                                <div
+                                                    v-if="conversationOf(detail[s.id])"
+                                                    class="space-y-3 max-h-96 overflow-y-auto pr-1"
+                                                >
+                                                    <div
+                                                        v-for="(m, mi) in conversationOf(detail[s.id])"
+                                                        :key="mi"
+                                                        class="flex"
+                                                        :class="m.role === 'user' ? 'justify-end' : 'justify-start'"
+                                                    >
+                                                        <div
+                                                            class="max-w-[85%] rounded-lg px-3 py-2 text-sm leading-6 border-2 border-[#0A0910]"
+                                                            :class="m.role === 'user' ? 'bg-yellow-300 text-gray-900 whitespace-pre-wrap' : 'bg-gray-50 text-gray-800'"
+                                                        >
+                                                            <div
+                                                                v-if="m.role === 'assistant'"
+                                                                class="markdown-body"
+                                                                v-html="renderMarkdown(m.content)"
+                                                            ></div>
+                                                            <template v-else>{{ m.content }}</template>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <div class="text-xs font-bold text-gray-500 mb-1">🤖 AI 顾问回复</div>
-                                                    <div class="text-sm text-gray-700 prose prose-sm max-w-none" v-html="renderResult(detail[s.id])"></div>
+                                                <!-- 兼容旧的 request/result 结构 -->
+                                                <div v-else class="space-y-3">
+                                                    <div>
+                                                        <div class="text-xs font-bold text-gray-500 mb-1">🤔 你的提问</div>
+                                                        <pre class="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 rounded p-2">{{ formatRequest(detail[s.id]) }}</pre>
+                                                    </div>
+                                                    <div>
+                                                        <div class="text-xs font-bold text-gray-500 mb-1">🤖 AI 顾问回复</div>
+                                                        <div class="text-sm text-gray-700" v-html="renderResult(detail[s.id])"></div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -172,6 +199,28 @@ const detailLoadingId = ref(null)
 
 const md = new It({ html: false, linkify: true, breaks: true })
 
+const renderMarkdown = (text) => {
+    if (!text) return ''
+    try {
+        return md.render(String(text))
+    } catch {
+        return ''
+    }
+}
+
+/**
+ * 从会话详情中提取对话消息数组
+ * 新格式把整轮对话存在 request/result.conversation 中
+ */
+const conversationOf = (d) => {
+    const hist = d?.result?.conversation || d?.result?.messages || d?.request?.conversation || d?.request?.messages
+    if (!Array.isArray(hist)) return null
+    const msgs = hist
+        .filter((m) => m && ['user', 'assistant'].includes(m.role) && m.content)
+        .map((m) => ({ role: m.role, content: String(m.content) }))
+    return msgs.length ? msgs : null
+}
+
 const goConsult = () => router.push('/consultant')
 
 const loadSessions = async () => {
@@ -203,9 +252,18 @@ const formatTime = (iso) => {
 
 const pad = (n) => String(n).padStart(2, '0')
 
-// 摘要：优先取 request/result 的关键信息
+// 摘要：优先显示对话内容，其次兼容旧的 request/result 结构
 const summary = (s) => {
     const d = detail.value[s.id]
+    const conv = conversationOf(d)
+    if (conv) {
+        const firstUser = conv.find((m) => m.role === 'user')
+        const replies = conv.filter((m) => m.role === 'assistant').length
+        if (firstUser) {
+            const q = firstUser.content.replace(/\s+/g, ' ').slice(0, 60)
+            return replies ? `${q}（共 ${replies} 轮回复）` : q
+        }
+    }
     if (d?.request && Object.keys(d.request).length) {
         try {
             const req = d.request
@@ -287,7 +345,7 @@ const filteredSessions = computed(() => {
         if (timeFilter.value === 'all') return true
         let d
         try {
-            d = new Date(s.created_at.replace(' ', 'T'))
+            d = new Date(s.createdAt.replace(' ', 'T'))
         } catch {
             return true
         }
@@ -315,5 +373,77 @@ onMounted(() => {
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+}
+
+/* v-html 渲染的 Markdown 内容需要 :deep 才能命中 */
+.markdown-body :deep(p) {
+    margin: 0.25rem 0;
+}
+.markdown-body :deep(h1),
+.markdown-body :deep(h2),
+.markdown-body :deep(h3) {
+    font-weight: 800;
+    margin: 0.4rem 0 0.25rem;
+}
+.markdown-body :deep(h1) {
+    font-size: 1.1rem;
+}
+.markdown-body :deep(h2) {
+    font-size: 1.02rem;
+}
+.markdown-body :deep(h3) {
+    font-size: 0.98rem;
+}
+.markdown-body :deep(ul),
+.markdown-body :deep(ol) {
+    margin: 0.25rem 0 0.25rem 1.1rem;
+}
+.markdown-body :deep(ul) {
+    list-style: disc;
+}
+.markdown-body :deep(ol) {
+    list-style: decimal;
+}
+.markdown-body :deep(li) {
+    margin: 0.125rem 0;
+}
+.markdown-body :deep(code) {
+    background: #f3f4f6;
+    padding: 0.1rem 0.25rem;
+    border-radius: 4px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+.markdown-body :deep(pre) {
+    background: #f3f4f6;
+    padding: 0.5rem;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 0.35rem 0;
+}
+.markdown-body :deep(pre code) {
+    background: transparent;
+    padding: 0;
+}
+.markdown-body :deep(strong) {
+    font-weight: 800;
+}
+.markdown-body :deep(a) {
+    color: #b45309;
+    text-decoration: underline;
+}
+.markdown-body :deep(table) {
+    border-collapse: collapse;
+    margin: 0.35rem 0;
+}
+.markdown-body :deep(th),
+.markdown-body :deep(td) {
+    border: 1px solid #e5e7eb;
+    padding: 0.25rem 0.5rem;
+}
+.markdown-body :deep(blockquote) {
+    border-left: 3px solid #fbbf24;
+    padding-left: 0.5rem;
+    color: #4b5563;
+    margin: 0.35rem 0;
 }
 </style>

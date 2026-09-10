@@ -6,6 +6,7 @@
  * 自己的 API Key，会通过请求头透传给后端（优先级高于服务端配置）。
  */
 import { getTextGenerationConfig, getImageGenerationConfig } from '@/utils/apiConfig'
+import { getToken } from './backendClient'
 
 const API_BASE = (import.meta.env as any).VITE_API_BASE_URL || '/api'
 const USER_ID_KEY = 'meal-agent-user-id'
@@ -41,11 +42,15 @@ const aiHeaders = (kind: AiKind = 'text'): Record<string, string> => {
     }
 }
 
-const buildHeaders = (kind: AiKind = 'text'): Record<string, string> => ({
-    'Content-Type': 'application/json',
-    'X-User-Id': getUserId(),
-    ...aiHeaders(kind)
-})
+const buildHeaders = (kind: AiKind = 'text'): Record<string, string> => {
+    const token = getToken()
+    return {
+        'Content-Type': 'application/json',
+        'X-User-Id': getUserId(),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...aiHeaders(kind)
+    }
+}
 
 async function request<T>(method: string, path: string, body?: unknown, kind: AiKind = 'text'): Promise<T> {
     let response: Response

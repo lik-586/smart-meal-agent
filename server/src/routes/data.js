@@ -1,11 +1,15 @@
-/** 收藏夹 / 图库 数据接口（服务端持久化） */
+/** 收藏夹 / 图库 数据接口（服务端持久化，需登录） */
 const express = require('express')
 const db = require('../db')
 const { uid, asyncHandler, HttpError } = require('../utils')
+const { requireAuth } = require('../security')
 
 const router = express.Router()
 
-const getUserId = req => req.headers['x-user-id'] || req.query.userId || req.body?.userId || 'anonymous'
+// 收藏 / 图库数据均绑定登录用户，统一鉴权
+router.use(requireAuth)
+
+const getUserId = req => String(req.auth.id)
 
 // ---------------- 收藏夹 ----------------
 router.get('/favorites', asyncHandler(async (req, res) => {

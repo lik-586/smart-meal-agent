@@ -40,7 +40,7 @@
                             :title="s.topic"
                         >
                             <div class="font-bold text-gray-800 text-sm truncate">🍱 {{ s.topic }}</div>
-                            <div class="text-xs text-gray-500 mt-0.5">{{ formatTime(s.created_at) }}</div>
+                            <div class="text-xs text-gray-500 mt-0.5">{{ formatTime(s.createdAt) }}</div>
                         </button>
                         <p v-if="savedSessions.length === 0" class="text-center text-gray-400 text-xs py-6">
                             暂无历史会话
@@ -52,16 +52,26 @@
                 <div class="flex-1 flex flex-col min-w-0">
                     <!-- 头部 -->
                     <div class="px-4 py-3 bg-yellow-100 border-b-2 border-[#0A0910] flex items-center gap-3 shrink-0">
-                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 border-2 border-[#0A0910] flex items-center justify-center text-xl">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 border-2 border-[#0A0910] flex items-center justify-center text-xl shrink-0">
                             👨‍🍳
                         </div>
-                        <div>
+                        <div class="min-w-0">
                             <div class="font-black text-gray-800">AI 饮食顾问</div>
-                            <div class="text-xs text-gray-600">会做菜的智能体，随时为你出招</div>
+                            <div class="text-xs text-gray-600 truncate">会做菜的智能体，随时为你出招</div>
                         </div>
-                        <span class="ml-auto text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
-                            ● 在线
-                        </span>
+                        <div class="ml-auto flex items-center gap-2 shrink-0">
+                            <button
+                                @click="goSessions"
+                                class="flex items-center gap-1 px-2.5 py-1.5 text-xs bg-white text-gray-700 rounded-lg font-bold border-2 border-[#0A0910] hover:bg-yellow-200 transition-colors"
+                                title="查看全部历史会话"
+                            >
+                                <span>📜</span>
+                                <span class="hidden sm:inline">我的会话</span>
+                            </button>
+                            <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
+                                ● 在线
+                            </span>
+                        </div>
                     </div>
 
                     <!-- 消息列表 -->
@@ -136,7 +146,7 @@ import GlobalNavigation from '@/components/GlobalNavigation.vue'
 import GlobalFooter from '@/components/GlobalFooter.vue'
 import { useAuthStore } from '@/stores/auth.js'
 import { streamAgent } from '@/services/agentService'
-import { listSessions, getSessionDetail, createSession } from '@/services/backendClient'
+import { listSessions, getSessionDetail, createSession, updateSession } from '@/services/backendClient'
 import It from 'markdown-it'
 
 const router = useRouter()
@@ -218,23 +228,34 @@ const loadSaved = async (id) => {
     }
 }
 
-// 保存当前对话到后端会话
+// 保存当前对话到后端会话：同一轮对话复用同一条记录（首次创建，之后更新）
 const saveCurrentSession = async () => {
     const userMsgs = messages.value.filter((m) => m.role === 'user')
     if (userMsgs.length === 0) return
     const topic = userMsgs[0].content.slice(0, 20) + (userMsgs[0].content.length > 20 ? '...' : '')
+    const conversation = messages.value.map((m) => ({ role: m.role, content: m.content }))
+    const payload = {
+        topic,
+        request: { conversation },
+        result: { conversation }
+    }
     try {
-        const res = await createSession({
-            topic,
-            request: { conversation: messages.value.map((m) => ({ role: m.role, content: m.content })) },
-            result: { conversation: messages.value.map((m) => ({ role: m.role, content: m.content })) }
-        })
+        if (activeId.value) {
+            // 已有会话：追加内容，不新建
+            await updateSession(activeId.value, payload)
+        } else {
+            // 新会话：创建并记住 id，后续对话都写回这条记录
+            const res = await createSession(payload)
+            activeId.value = res.id
+        }
         await loadSavedSessions()
-        return res.id
     } catch (e) {
         console.warn('保存会话失败', e)
     }
 }
+
+// 跳转「我的会话」历史页
+const goSessions = () => router.push('/sessions')
 
 const loadSavedSessions = async () => {
     if (!auth.loggedIn.value) return

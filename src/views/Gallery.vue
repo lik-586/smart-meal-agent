@@ -186,7 +186,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { GalleryService, type GalleryImage } from '@/services/galleryService'
+import { GalleryService, loadGallery, type GalleryImage } from '@/services/galleryService'
 import GlobalNavigation from '@/components/GlobalNavigation.vue'
 import GlobalFooter from '@/components/GlobalFooter.vue'
 import ImageModal from '@/components/ImageModal.vue'
@@ -362,7 +362,8 @@ const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'inf
 }
 
 // 初始化
-onMounted(() => {
+onMounted(async () => {
+    await loadGallery()
     refreshGallery()
 })
 </script>

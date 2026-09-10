@@ -156,12 +156,13 @@
 
 <script setup>
 import { ref, reactive, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import GlobalNavigation from '@/components/GlobalNavigation.vue'
 import GlobalFooter from '@/components/GlobalFooter.vue'
 import { useAuthStore } from '@/stores/auth.js'
 
 const router = useRouter()
+const route = useRoute()
 const auth = useAuthStore()
 
 const isLoginMode = ref(true)
@@ -252,7 +253,8 @@ const handleSubmit = async () => {
             successMsg.value = '注册成功，正在进入...'
         }
         setTimeout(() => {
-            router.push('/')
+            const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
+            router.push(redirect)
         }, 800)
     } catch (e) {
         const detail = e?.response?.data?.detail
@@ -264,7 +266,7 @@ const handleSubmit = async () => {
 
 const handleForgotPassword = () => {
     errorMsg.value = ''
-    successMsg.value = '演示账号：demo / secret123。正式使用请通过注册创建自己的账号。'
+    successMsg.value = '当前版本暂不支持自助找回密码，请注册一个新账号使用。'
 }
 </script>
 

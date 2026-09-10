@@ -11,13 +11,15 @@ import HowToCook from './views/HowToCook.vue'
 import SauceDesign from './views/SauceDesign.vue'
 import FortuneCooking from './views/FortuneCooking.vue'
 import SettingsDemo from './views/SettingsDemo.vue'
-import AgentStudio from './views/AgentStudio.vue'
 import Login from './views/Login.vue'
 import Sessions from './views/Sessions.vue'
 import AIConsultant from './views/AIConsultant.vue'
+import AgentStudio from './views/AgentStudio.vue'
 import { autoRefreshEnvSettings } from './utils/envWatcher'
-import { loadFavorites } from './services/favoriteService'
-import { loadGallery } from './services/galleryService'
+import { loadFavorites, reloadFavorites, clearFavoritesCache } from './services/favoriteService'
+import { loadGallery, reloadGallery, clearGalleryCache } from './services/galleryService'
+import { isLoggedIn } from './services/backendClient'
+import { AUTH_CHANGED_EVENT } from './stores/auth.js'
 import './style.css'
 
 const routes = [
@@ -31,15 +33,29 @@ const routes = [
     { path: '/sauce-design', component: SauceDesign },
     { path: '/fortune-cooking', component: FortuneCooking },
     { path: '/settings-demo', component: SettingsDemo },
-    { path: '/agent', component: AgentStudio },
     { path: '/login', component: Login },
     { path: '/sessions', component: Sessions },
-    { path: '/consultant', component: AIConsultant }
+    { path: '/consultant', component: AIConsultant },
+    { path: '/agent', component: AgentStudio }
 ]
 
 const router = createRouter({
     history: createWebHistory(),
     routes
+})
+
+// 需要登录才能访问的个性化页面
+const AUTH_REQUIRED_PATHS = ['/favorites', '/gallery', '/sessions', '/consultant', '/agent']
+
+router.beforeEach((to) => {
+    const loggedIn = isLoggedIn()
+    if (AUTH_REQUIRED_PATHS.includes(to.path) && !loggedIn) {
+        return { path: '/login', query: { redirect: to.fullPath } }
+    }
+    if (to.path === '/login' && loggedIn) {
+        const redirect = typeof to.query.redirect === 'string' && to.query.redirect.startsWith('/') ? to.query.redirect : '/'
+        return { path: redirect }
+    }
 })
 
 // 初始化应用
@@ -48,9 +64,22 @@ const app = createApp(App).use(router)
 // 在应用挂载前检查环境变量变化并自动刷新
 autoRefreshEnvSettings()
 
-// 从后端拉取收藏与图库数据（服务端持久化）
-loadFavorites()
-loadGallery()
+// 从后端拉取收藏与图库数据（服务端持久化，需登录）
+if (isLoggedIn()) {
+    loadFavorites()
+    loadGallery()
+}
+
+// 登录状态变化时同步刷新 / 清空个性化数据，避免串号
+window.addEventListener(AUTH_CHANGED_EVENT, () => {
+    if (isLoggedIn()) {
+        reloadFavorites()
+        reloadGallery()
+    } else {
+        clearFavoritesCache()
+        clearGalleryCache()
+    }
+})
 
 // 挂载应用
 app.mount('#app')

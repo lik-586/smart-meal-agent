@@ -1,12 +1,16 @@
-/** Agent 智能体接口（同步 / SSE 流式 / 运行记录） */
+/** Agent 智能体接口（同步 / SSE 流式 / 运行记录，需登录） */
 const express = require('express')
 const { runAgent, runAgentSync, listRuns, toolDefinitions } = require('../agent/agent')
 const { overrideFromRequest } = require('../config')
 const { asyncHandler } = require('../utils')
+const { requireAuth } = require('../security')
 
 const router = express.Router()
 
-const getUserId = req => req.headers['x-user-id'] || req.body?.userId || 'anonymous'
+// AI 饮食顾问（智能体工作台）绑定用户，统一鉴权
+router.use(requireAuth)
+
+const getUserId = req => String(req.auth.id)
 const reqConfig = req => ({ ...overrideFromRequest(req), ...(req.body?.config || {}) })
 
 /** Agent 可用工具列表 */

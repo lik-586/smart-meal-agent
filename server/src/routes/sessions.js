@@ -11,26 +11,44 @@ const userIdOf = req => String(req.auth.id)
 /** 创建会话 */
 router.post('/sessions', requireAuth, asyncHandler(async (req, res) => {
     const { topic = '历史记录', request = {}, result = {} } = req.body || {}
+    const now = new Date().toISOString()
     const session = {
         id: uid('sess'),
         userId: userIdOf(req),
         topic: String(topic),
         request,
         result,
-        createdAt: new Date().toISOString()
+        createdAt: now,
+        updatedAt: now
     }
     db.insert('sessions', session)
     res.status(201).json({ ok: true, data: { id: session.id, createdAt: session.createdAt } })
 }))
 
-/** 会话列表 */
+/** 会话列表（按最近活跃时间倒序） */
 router.get('/sessions', requireAuth, asyncHandler(async (req, res) => {
     const uid_ = userIdOf(req)
     const list = db
         .find('sessions', s => s.userId === uid_)
-        .map(s => ({ id: s.id, topic: s.topic, createdAt: s.createdAt }))
-        .sort((a, b) => (b.createdAt > a.createdAt ? 1 : -1))
+        .map(s => ({ id: s.id, topic: s.topic, createdAt: s.createdAt, updatedAt: s.updatedAt || s.createdAt }))
+        .sort((a, b) => (b.updatedAt > a.updatedAt ? 1 : -1))
     res.json({ ok: true, data: list })
+}))
+
+/** 更新会话：同一轮对话继续追加内容，复用同一条记录而非新建 */
+router.put('/sessions/:id', requireAuth, asyncHandler(async (req, res) => {
+    const { topic, request, result } = req.body || {}
+    const uid_ = userIdOf(req)
+    const session = db.findOne('sessions', x => x.id === req.params.id && x.userId === uid_)
+    if (!session) throw new HttpError(404, '会话不存在')
+
+    const patch = { updatedAt: new Date().toISOString() }
+    if (topic !== undefined) patch.topic = String(topic)
+    if (request !== undefined) patch.request = request
+    if (result !== undefined) patch.result = result
+
+    db.update('sessions', x => x.id === req.params.id && x.userId === uid_, () => ({ ...session, ...patch }))
+    res.json({ ok: true, data: { id: session.id } })
 }))
 
 /** 会话详情 */

@@ -21,10 +21,6 @@ const setRemember = (remember: boolean): void => {
     localStorage.setItem(REMEMBER_KEY, String(remember))
 }
 
-// 演示用默认账号：后端拿不到 key 时也能注册登录验证鉴权链路
-const DEMO_USERNAME = 'demo'
-const DEMO_PASSWORD = 'secret123'
-
 const client = axios.create({
     baseURL: BASE_URL,
     timeout: 300000,
@@ -40,7 +36,27 @@ client.interceptors.request.use((config) => {
     return config
 })
 
-export const getToken = (): string | null => localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY)
+// 响应拦截器：后端统一返回 { ok, data } 包装结构，此处自动解包出 data，
+// 使各调用方拿到的即为业务数据（否则登录拿不到 token、会话列表拿不到数组）。
+client.interceptors.response.use(
+    (response) => {
+        const body = response.data
+        if (body && typeof body === 'object' && body.ok === true && 'data' in body) {
+            response.data = body.data
+        }
+        return response
+    },
+    (error) => {
+        const message = error?.response?.data?.message || error?.message || '请求失败'
+        return Promise.reject(new Error(message))
+    }
+)
+
+export const getToken = (): string | null => {
+    const token = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY)
+    // 过滤历史遗留的非法 token（如字符串 "undefined"/"null"），避免误判为已登录
+    return token && token !== 'undefined' && token !== 'null' ? token : null
+}
 
 export const getUser = (): { username: string } | null => {
     try {
@@ -74,20 +90,6 @@ export const login = async (username: string, password: string, remember = true)
     storage().setItem(USER_KEY, JSON.stringify({ username: data.username }))
 }
 
-/**
- * 确保已登录：未登录则用演示账号尝试注册/登录。
- * 这样"一桌菜"功能开箱即走，无需用户手动操作。
- */
-const ensureLoggedIn = async (): Promise<void> => {
-    if (isLoggedIn()) return
-    try {
-        await login(DEMO_USERNAME, DEMO_PASSWORD)
-    } catch {
-        // 首次运行无该账号，转注册
-        await register(DEMO_USERNAME, DEMO_PASSWORD)
-    }
-}
-
 export interface TableRequest {
     dish_count: number
     flexible_count: boolean
@@ -107,15 +109,15 @@ export interface TablePlan {
 
 /** 调用后端多 Agent 编排生成一桌菜 + 采购清单 + 运转轨迹 */
 export const generateTablePlan = async (req: TableRequest): Promise<TablePlan> => {
-    await ensureLoggedIn()
     const { data } = await client.post('/tables/generate', req)
     return data as TablePlan
 }
 
 export interface SessionListItem {
-    id: number
+    id: string
     topic: string
-    created_at: string
+    createdAt: string
+    updatedAt?: string
 }
 
 export interface SessionDetail extends SessionListItem {
@@ -124,13 +126,13 @@ export interface SessionDetail extends SessionListItem {
 }
 
 export interface FavoriteListItem {
-    id: number
+    id: string
     recipe: Record<string, unknown>
     notes: string
-    created_at?: string
+    createdAt?: string
 }
 
-/** 会话列表（按时间倒序） */
+/** 会话列表（按最近活跃时间倒序） */
 export const listSessions = async (): Promise<SessionListItem[]> => {
     const { data } = await client.get('/sessions')
     return data as SessionListItem[]
@@ -143,19 +145,24 @@ export interface SessionCreateApi {
 }
 
 /** 创建会话 */
-export const createSession = async (payload: SessionCreateApi): Promise<{ id: number; created_at: string }> => {
+export const createSession = async (payload: SessionCreateApi): Promise<{ id: string; createdAt: string }> => {
     const { data } = await client.post('/sessions', payload)
-    return data as { id: number; created_at: string }
+    return data as { id: string; createdAt: string }
+}
+
+/** 更新会话（同一轮对话继续追加内容，复用同一条记录） */
+export const updateSession = async (id: string, payload: SessionCreateApi): Promise<void> => {
+    await client.put(`/sessions/${id}`, payload)
 }
 
 /** 会话详情 */
-export const getSessionDetail = async (id: number): Promise<SessionDetail> => {
+export const getSessionDetail = async (id: string): Promise<SessionDetail> => {
     const { data } = await client.get(`/sessions/${id}`)
     return data as SessionDetail
 }
 
 /** 删除会话 */
-export const deleteSessionApi = async (id: number): Promise<void> => {
+export const deleteSessionApi = async (id: string): Promise<void> => {
     await client.delete(`/sessions/${id}`)
 }
 

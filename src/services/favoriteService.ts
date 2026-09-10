@@ -64,6 +64,18 @@ export const loadFavorites = (): Promise<void> => {
     return loadingPromise
 }
 
+/** 强制重新从后端拉取（登录后调用，重置缓存并刷新） */
+export const reloadFavorites = (): Promise<void> => {
+    loadingPromise = null
+    return loadFavorites()
+}
+
+/** 清空缓存并允许下次重新加载（登出后调用，避免串号） */
+export const clearFavoritesCache = (): void => {
+    loadingPromise = null
+    favorites.value.splice(0, favorites.value.length)
+}
+
 export class FavoriteService {
     /** 获取所有收藏（同步，返回响应式缓存） */
     static getFavorites(): FavoriteRecipe[] {

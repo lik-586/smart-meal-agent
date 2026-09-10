@@ -14,7 +14,9 @@ const RECIPE_JSON_TEMPLATE = `{
 }`
 
 const CHEF_SYSTEM =
-    '你是一位经验丰富的专业厨师，擅长制作各种菜系的美食。请根据用户提供的食材和菜系要求，生成详细实用的菜谱。你的菜谱要让新手也能成功制作，包含具体的操作方法、时间控制和关键技巧。请严格按照JSON格式返回，不要包含任何其他文字。'
+    '你是一位经验丰富的专业厨师，擅长制作各种菜系的美食。请根据用户提供的食材和菜系要求，生成详细实用的菜谱。你的菜谱要让新手也能成功制作，包含具体的操作方法、时间控制和关键技巧。请严格按照JSON格式返回，不要包含任何其他文字。注意：JSON 字符串内部禁止出现英文双引号，如需引用词语请使用中文引号「」；字符串内不要使用换行。'
+
+const JSON_OUTPUT_RULE = '\n\n【输出要求】只输出一个合法 JSON 对象，不要代码块标记、不要解释文字。字符串值内禁止出现英文双引号（请用中文引号「」代替），禁止裸换行。'
 
 const DETAIL_REQUIREMENT = `请生成一份详细实用的菜谱，要求：
 1. 食材清单要包含具体用量（如：猪肉300g、生抽2勺、盐1茶匙）
@@ -71,7 +73,7 @@ ${DETAIL_REQUIREMENT}
 5. 满足用户的特殊要求，如口味偏好、营养需求等
 
 请按照以下JSON格式返回菜谱：
-${RECIPE_JSON_TEMPLATE}`
+${RECIPE_JSON_TEMPLATE}${JSON_OUTPUT_RULE}`
 
     const data = await chatJSON(
         [
@@ -82,7 +84,7 @@ ${RECIPE_JSON_TEMPLATE}`
             },
             { role: 'user', content: prompt }
         ],
-        { config, maxTokens: 2000 }
+        { config, maxTokens: 4096 }
     )
 
     return normalizeRecipe(data, { id: uid('recipe-custom'), cuisine: '自定义', ingredients })
@@ -127,9 +129,9 @@ async function generateDishRecipe({ dishName, dishDescription, category, config 
 ${DETAIL_REQUIREMENT}
 
 请按照以下JSON格式返回菜谱：
-${RECIPE_JSON_TEMPLATE}`
+${RECIPE_JSON_TEMPLATE}${JSON_OUTPUT_RULE}`
 
-    const data = await chatJSON([{ role: 'system', content: CHEF_SYSTEM }, { role: 'user', content: prompt }], { config })
+    const data = await chatJSON([{ role: 'system', content: CHEF_SYSTEM }, { role: 'user', content: prompt }], { config, maxTokens: 4096 })
 
     return normalizeRecipe(data, { id: uid('dish-recipe'), name: dishName, cuisine: category || '一桌好菜' })
 }

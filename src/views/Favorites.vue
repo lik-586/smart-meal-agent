@@ -199,7 +199,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import type { FavoriteRecipe } from '@/types'
-import { FavoriteService } from '@/services/favoriteService'
+import { FavoriteService, loadFavorites } from '@/services/favoriteService'
 import RecipeCard from '@/components/RecipeCard.vue'
 import GlobalNavigation from '@/components/GlobalNavigation.vue'
 import GlobalFooter from '@/components/GlobalFooter.vue'
@@ -381,7 +381,8 @@ const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'inf
 }
 
 // 初始化
-onMounted(() => {
+onMounted(async () => {
+    await loadFavorites()
     refreshFavorites()
 })
 </script>
