@@ -494,13 +494,7 @@ onUnmounted(() => {
 
 <style scoped>
 .recipe-card {
-    @apply transition-all duration-300 h-full;
-}
-
-.line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    transition: all 0.3s;
+    height: 100%;
 }
 </style>

@@ -369,13 +369,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.line-clamp-1 {
-    display: -webkit-box;
-    -webkit-line-clamp: 1;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
 /* 响应式调整 */
 @media (max-width: 640px) {
     .grid-cols-1 {

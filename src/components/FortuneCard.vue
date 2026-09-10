@@ -151,40 +151,4 @@ const getDifficultyName = (difficulty: 'easy' | 'medium' | 'hard'): string => {
     }
     return names[difficulty]
 }
-
-// 分享结果 - 暂时未使用
-// const shareResult = () => {
-//     const shareText = `🔮 料理占卜师为我推荐了：${props.fortune.dishName}\n\n✨ ${props.fortune.reason}\n\n🌟 幸运指数：${props.fortune.luckyIndex}/10\n\n来「智能美食搭配助手」体验神秘的料理占卜吧！`
-
-//     if (navigator.share) {
-//         navigator.share({
-//             title: '料理占卜结果',
-//             text: shareText,
-//             url: window.location.href
-//         })
-//     } else {
-//         navigator.clipboard.writeText(shareText).then(() => {
-//             // 可以添加提示
-//             console.log('占卜结果已复制到剪贴板')
-//         })
-//     }
-// }
-
-// 保存结果 - 暂时未使用
-// const saveResult = () => {
-//     try {
-//         const savedResults = JSON.parse(localStorage.getItem('fortune_results') || '[]')
-//         savedResults.unshift(props.fortune)
-
-//         // 只保留最近20个结果
-//         if (savedResults.length > 20) {
-//             savedResults.splice(20)
-//         }
-
-//         localStorage.setItem('fortune_results', JSON.stringify(savedResults))
-//         console.log('占卜结果已保存')
-//     } catch (error) {
-//         console.error('保存占卜结果失败:', error)
-//     }
-// }
 </script>

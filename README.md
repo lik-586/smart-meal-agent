@@ -375,7 +375,7 @@ what-to-eat-final/
 │   ├── services/              # 服务层（统一走后端）
 │   │   ├── http.ts                # REST + SSE 传输，透传 AI 配置请求头
 │   │   ├── aiService.ts           # AI 门面（菜谱/营养/搭配/酱料/占卜/视觉）
-│   │   ├── agentService.ts        # Agent（同步 / 流式 / 运行历史 / 工具清单）
+│   │   ├── agentService.ts        # Agent（SSE 流式对话）
 │   │   ├── backendClient.ts       # 认证客户端（注册/登录/会话/收藏）
 │   │   ├── favoriteService.ts     # 收藏
 │   │   ├── galleryService.ts      # 图库

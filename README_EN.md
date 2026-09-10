@@ -82,7 +82,6 @@ An AI-powered recipe platform supporting the Chinese Eight Great Cuisines plus i
 | `/about`            | About              | Team and tech overview                 |
 | `/login`            | Login / Register   | User authentication                    |
 | `/consultant`       | AI Diet Consultant | Agent chat + execution trace (login)   |
-| `/agent`            | Agent Workbench    | Execution-trace visualization + runs (login) |
 | `/sessions`         | Session History    | Search and replay Q&A (login)          |
 | `/favorites`        | My Favorites       | Server-side favorites (login)          |
 | `/gallery`          | Gallery            | Server-side image gallery (login)      |

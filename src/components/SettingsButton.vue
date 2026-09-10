@@ -33,7 +33,6 @@ const closeSettings = () => {
 }
 
 const onSettingsSaved = () => {
-    // 可以在这里添加保存成功的提示
-    console.log('设置已保存')
+    // 保存成功后的提示可在此扩展
 }
 </script>
