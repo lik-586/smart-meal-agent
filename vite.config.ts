@@ -26,6 +26,14 @@ export default defineConfig({
         outDir: 'dist',
         assetsDir: 'assets',
         sourcemap: false,
-        minify: 'esbuild'
+        minify: 'esbuild',
+        rollupOptions: {
+            output: {
+                // 框架与运行时独立分包，业务代码变更不影响 vendor 缓存
+                manualChunks: {
+                    'vendor-vue': ['vue', 'vue-router']
+                }
+            }
+        }
     }
 })

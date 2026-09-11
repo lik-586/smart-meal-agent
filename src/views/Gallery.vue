@@ -1,5 +1,5 @@
 <template>
-    <div class="min-h-screen bg-yellow-400 px-2 md:px-4 py-6">
+    <div class="min-h-screen px-2 md:px-4 py-6">
         <!-- 全局导航 -->
         <GlobalNavigation />
 
@@ -84,6 +84,8 @@
                             <img
                                 :src="image.url"
                                 :alt="image.recipeName"
+                                loading="lazy"
+                                decoding="async"
                                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                 @error="handleImageError(image.id)"
                             />

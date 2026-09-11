@@ -462,6 +462,10 @@ Agent 接口全部需要 JWT。先 `POST /api/auth/login` 取得 token，再在�
 -   [DEPLOYMENT.md](./DEPLOYMENT.md) - 部署指南
 -   [README_EN.md](./README_EN.md) - 英文版说明文档
 
+## 📜 许可
+
+仅供学术 / 教学用途发布。
+
 ## 🙏 致谢
 
 -   [Vue.js](https://vuejs.org/) - 渐进式 JavaScript 框架

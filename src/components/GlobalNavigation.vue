@@ -1,5 +1,5 @@
 <template>
-    <nav class="bg-white border-2 border-[#0A0910] max-w-7xl mx-auto rounded-lg mb-4 shadow-lg">
+    <nav class="bg-white border-2 border-[#0A0910] max-w-7xl mx-auto rounded-lg mb-4 shadow-brutal sticky top-2 z-40">
         <div class="px-4 py-6 md:px-6">
             <!-- 桌面端导航 -->
             <div class="hidden md:flex items-center justify-between">

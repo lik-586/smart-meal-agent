@@ -2,24 +2,26 @@ import { createApp } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import App from './App.vue'
 import Home from './views/Home.vue'
-import About from './views/About.vue'
-import TodayEat from './views/TodayEat.vue'
-import TableDesign from './views/TableDesign.vue'
-import Favorites from './views/Favorites.vue'
-import Gallery from './views/Gallery.vue'
-import HowToCook from './views/HowToCook.vue'
-import SauceDesign from './views/SauceDesign.vue'
-import FortuneCooking from './views/FortuneCooking.vue'
-import SettingsDemo from './views/SettingsDemo.vue'
-import Login from './views/Login.vue'
-import Sessions from './views/Sessions.vue'
-import AIConsultant from './views/AIConsultant.vue'
 import { autoRefreshEnvSettings } from './utils/envWatcher'
 import { loadFavorites, reloadFavorites, clearFavoritesCache } from './services/favoriteService'
 import { loadGallery, reloadGallery, clearGalleryCache } from './services/galleryService'
 import { isLoggedIn } from './services/backendClient'
 import { AUTH_CHANGED_EVENT } from './stores/auth.js'
 import './style.css'
+
+// 首页保持同步加载保证首屏，其余路由懒加载按需拆包
+const About = () => import('./views/About.vue')
+const TodayEat = () => import('./views/TodayEat.vue')
+const TableDesign = () => import('./views/TableDesign.vue')
+const Favorites = () => import('./views/Favorites.vue')
+const Gallery = () => import('./views/Gallery.vue')
+const HowToCook = () => import('./views/HowToCook.vue')
+const SauceDesign = () => import('./views/SauceDesign.vue')
+const FortuneCooking = () => import('./views/FortuneCooking.vue')
+const SettingsDemo = () => import('./views/SettingsDemo.vue')
+const Login = () => import('./views/Login.vue')
+const Sessions = () => import('./views/Sessions.vue')
+const AIConsultant = () => import('./views/AIConsultant.vue')
 
 const routes = [
     { path: '/', component: Home },

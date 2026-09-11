@@ -1,5 +1,5 @@
 <template>
-    <div class="min-h-screen bg-yellow-400 px-2 md:px-4 py-6">
+    <div class="min-h-screen px-2 md:px-4 py-6">
         <GlobalNavigation />
 
         <div class="max-w-md mx-auto">

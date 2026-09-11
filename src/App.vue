@@ -1,6 +1,10 @@
 <template>
     <div id="app" class="min-h-screen">
-        <router-view />
+        <router-view v-slot="{ Component }">
+            <transition name="page-fade" mode="out-in">
+                <component :is="Component" />
+            </transition>
+        </router-view>
         <GlobalNoticeModal />
     </div>
 </template>

@@ -1,5 +1,5 @@
 <template>
-    <div class="min-h-screen bg-yellow-400 px-2 md:px-4 py-6">
+    <div class="min-h-screen px-2 md:px-4 py-6">
         <!-- 全局导航 -->
         <GlobalNavigation />
 
@@ -437,10 +437,9 @@
 
         <!-- 底部 -->
         <GlobalFooter />
-    </div>
 
-    <!-- 菜谱弹窗 -->
-    <Teleport to="body">
+        <!-- 菜谱弹窗（Teleport 运行时挂载到 body，嵌套在根节点内保证组件单根，避免 App 级 Transition 失效） -->
+        <Teleport to="body">
         <div v-if="selectedRecipe" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4 modal-overlay" @click="closeRecipeModal">
             <div
                 class="bg-white rounded-2xl border-2 border-[#0A0910] shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden modal-content transform transition-all duration-300"
@@ -469,6 +468,7 @@
             </div>
         </div>
     </Teleport>
+    </div>
 </template>
 
 <script setup lang="ts">

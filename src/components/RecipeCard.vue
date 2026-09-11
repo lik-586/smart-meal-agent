@@ -213,6 +213,8 @@
                     <img
                         :src="generatedImage.url"
                         :alt="`${recipe.name}效果图`"
+                        loading="lazy"
+                        decoding="async"
                         class="w-full object-cover rounded-lg border-2 border-[#0A0910] cursor-pointer transition-all duration-300 hover:brightness-110 hover:scale-[1.02]"
                         @error="handleImageError"
                         @click="openImageModal"

@@ -1,5 +1,5 @@
 <template>
-    <div class="min-h-screen bg-yellow-400 px-2 md:px-4 py-6">
+    <div class="min-h-screen px-2 md:px-4 py-6">
         <!-- 全局导航 -->
         <GlobalNavigation />
 
@@ -88,7 +88,7 @@
                     </div>
 
                     <!-- 菜谱内容 -->
-                    <div v-if="recipe" class="max-w-2xl mx-auto border-2 border-[#333333] rounded-lg overflow-hidden">
+                    <div v-if="recipe" class="max-w-2xl mx-auto border-2 border-[#333333] rounded-lg overflow-hidden shadow-brutal">
                         <RecipeCard :recipe="recipe" :show-actions="true" />
                     </div>
                 </div>

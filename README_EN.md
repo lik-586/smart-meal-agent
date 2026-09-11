@@ -422,6 +422,12 @@ Everything is in `server/data/db.json` (users, sessions, favorites, gallery, age
 **Q10: Build warns about outdated Browserslist data?**
 Run `npx update-browserslist-db@latest`. It does not affect the build result.
 
+## 📝 Changelog
+
+-   **v1.2 (2026-09)**: Full code cleanup — removed orphan components (FloatingChefAssistant / CookingLoader / RecipeModal), redundant styles and commented-out dead code; synced Chinese/English READMEs and API docs.
+-   **v1.1 (2026-09)**: Removed the standalone Agent Workbench page (overlapped with the AI Diet Consultant), keeping only the streaming endpoint; merged upstream strengths — HTTP retries, concurrency limiting, multi-provider model presets, single-window launcher; recipes now fall back to local classic dishes when generation fails.
+-   **v1.0 (2026-09)**: Initial release — multi-agent orchestration (ReAct loop), JWT auth, SSE streaming, nutrition analysis / wine pairing / sauce design / fortune cooking / fridge vision.
+
 ## 📄 Related Docs
 
 -   [docs/API.md](./docs/API.md) – full backend API reference

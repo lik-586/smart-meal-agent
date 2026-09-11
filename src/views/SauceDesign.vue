@@ -1,5 +1,5 @@
 <template>
-    <div class="min-h-screen bg-yellowpx-2 px-2 md:px-4 py-6">
+    <div class="min-h-screen px-2 md:px-4 py-6">
         <!-- 全局导航 -->
         <GlobalNavigation />
         <div class="max-w-7xl mx-auto">

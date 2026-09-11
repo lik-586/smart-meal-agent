@@ -1,5 +1,5 @@
 <template>
-    <div class="min-h-screen bg-yellow-400 px-2 md:px-4 py-6">
+    <div class="min-h-screen px-2 md:px-4 py-6">
         <!-- 全局导航 -->
         <GlobalNavigation />
 
@@ -400,7 +400,7 @@
                             <div
                                 v-for="(cuisineInfo, index) in cuisineSlots"
                                 :key="cuisineInfo.id"
-                                class="border-2 border-[#0A0910] rounded-lg overflow-hidden"
+                                class="border-2 border-[#0A0910] rounded-lg overflow-hidden shadow-brutal"
                                 :class="cuisineInfo.recipe ? 'animate-fade-in-up' : ''"
                                 :style="cuisineInfo.recipe ? { animationDelay: `${index * 0.2}s` } : {}"
                             >
@@ -588,7 +588,7 @@
                         <div
                             v-for="(recipe, index) in recipes"
                             :key="recipe.id"
-                            class="border-2 border-[#0A0910] rounded-lg overflow-hidden animate-fade-in-up"
+                            class="border-2 border-[#0A0910] rounded-lg overflow-hidden shadow-brutal animate-fade-in-up"
                             :style="{ animationDelay: `${index * 0.2}s` }"
                         >
                             <RecipeCard :recipe="recipe" />
