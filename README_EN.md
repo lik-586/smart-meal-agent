@@ -7,6 +7,16 @@ An AI-powered recipe platform supporting the Chinese Eight Great Cuisines plus i
 
 > ✅ Every feature, endpoint and config option in this document has been verified against the current codebase (Node 22 / macOS, 2026-09).
 
+## 📸 Screenshots
+
+| Home · Ingredient input | Cuisine picker · Hand over to the master |
+| --- | --- |
+| ![home](docs/screenshots/01-home.png) | ![features](docs/screenshots/02-home-features.png) |
+| **What to eat today** | **Fortune cooking** |
+| ![today-eat](docs/screenshots/03-today-eat.png) | ![fortune](docs/screenshots/04-fortune.png) |
+| **AI diet consultant · Agent chat** | |
+| ![consultant](docs/screenshots/05-consultant.png) | |
+
 ## 🚀 Core Features
 
 -   **Smart Recipe Generation** – professional recipes from ingredients and cuisine preferences

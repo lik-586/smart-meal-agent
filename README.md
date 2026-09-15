@@ -7,6 +7,16 @@
 
 > ✅ 本文档所有功能、接口与配置均已对照当前代码逐项实测校验（Node 22 / macOS，2026-09）。
 
+## 📸 界面预览
+
+| 首页 · 食材输入 | 菜系选择 · 交给大师 |
+| --- | --- |
+| ![home](docs/screenshots/01-home.png) | ![features](docs/screenshots/02-home-features.png) |
+| **美食盲盒 · 今日吃啥** | **玄学厨房 · 料理占卜** |
+| ![today-eat](docs/screenshots/03-today-eat.png) | ![fortune](docs/screenshots/04-fortune.png) |
+| **AI 饮食顾问 · Agent 对话** | |
+| ![consultant](docs/screenshots/05-consultant.png) | |
+
 ## 🚀 核心功能
 
 -   **智能菜谱生成** - 基于食材和菜系偏好生成专业菜谱
